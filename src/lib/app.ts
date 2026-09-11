@@ -1,6 +1,14 @@
 import { createItem, actionButtons, type Item, type Status } from './gtd';
-import { readItems, writeItems, quarantine, onExternalChange } from './storage';
-import { serializeBackup, backupFilename, downloadText } from './backup';
+import {
+  readItems,
+  writeItems,
+  quarantine,
+  onExternalChange,
+  requestPersistence,
+  readLastExport,
+  writeLastExport,
+} from './storage';
+import { serializeBackup, backupFilename, parseBackup, mergeItems, downloadText } from './backup';
 
 const SECTIONS: { status: Status; label: string }[] = [
   { status: 'inbox', label: 'Inbox' },
@@ -22,6 +30,7 @@ let unsaved = false;
 let saveFailed = false;
 /** The unreadable data most recently set aside, so the same data is never copied twice. */
 let setAside: string | null = null;
+let persistenceRequested = false;
 
 // ---------------------------------------------------------------------------
 // Persistence
@@ -136,6 +145,10 @@ function boot(): void {
     else return;
     render();
   });
+
+  window.addEventListener('beforeunload', (event) => {
+    if (unsaved) event.preventDefault();
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -144,6 +157,10 @@ function boot(): void {
 
 function captureItem(value: string): void {
   commit((current) => [...current, createItem(value)]);
+  if (!persistenceRequested) {
+    persistenceRequested = true;
+    void requestPersistence();
+  }
 }
 
 function moveItem(id: string, status: Status): void {
@@ -164,6 +181,30 @@ function deleteItem(id: string): void {
 
 function exportData(): void {
   downloadText(backupFilename(), serializeBackup(items));
+  writeLastExport(Date.now());
+  renderBackupInfo();
+}
+
+async function importFile(file: File): Promise<void> {
+  const parsed = parseBackup(await file.text());
+  if (!parsed.ok) {
+    showToast(`Import failed: ${parsed.error}`);
+    return;
+  }
+  const preview = mergeItems(items, parsed.items);
+  const skipped = parsed.invalid > 0 ? ` ${parsed.invalid} unreadable entries will be skipped.` : '';
+  const ok = window.confirm(
+    `Import ${parsed.items.length} items from "${file.name}"?\n\n` +
+      `${preview.added} new, ${preview.updated} updated. Nothing in your current list is removed.${skipped}`,
+  );
+  if (!ok) return;
+
+  let result = preview;
+  commit((current) => {
+    result = mergeItems(current, parsed.items);
+    return result.items;
+  });
+  showToast(`Imported: ${result.added} new, ${result.updated} updated.`);
 }
 
 // ---------------------------------------------------------------------------
@@ -297,6 +338,18 @@ function render(): void {
   }
 }
 
+function renderBackupInfo(): void {
+  const el = document.getElementById('backup-info');
+  if (!el) return;
+  const last = readLastExport();
+  if (last === null) {
+    el.textContent = 'Never exported.';
+    return;
+  }
+  const days = Math.floor((Date.now() - last) / 86_400_000);
+  el.textContent = days === 0 ? 'Last export: today.' : `Last export: ${days} day${days === 1 ? '' : 's'} ago.`;
+}
+
 // ---------------------------------------------------------------------------
 // Wiring
 // ---------------------------------------------------------------------------
@@ -316,10 +369,21 @@ function setupCaptureForm(): void {
 }
 
 function setupBackupControls(): void {
-  document.getElementById('export-btn')?.addEventListener('click', exportData);
+  const exportBtn = document.getElementById('export-btn');
+  const importBtn = document.getElementById('import-btn');
+  const fileInput = document.getElementById('import-file') as HTMLInputElement | null;
+
+  exportBtn?.addEventListener('click', exportData);
+  importBtn?.addEventListener('click', () => fileInput?.click());
+  fileInput?.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = ''; // allow re-importing the same file
+    if (file) void importFile(file);
+  });
 }
 
 boot();
 setupCaptureForm();
 setupBackupControls();
 render();
+renderBackupInfo();

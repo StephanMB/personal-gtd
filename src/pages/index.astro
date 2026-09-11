@@ -24,6 +24,9 @@ import '../styles/global.css';
       <div id="gtd-root"></div>
       <footer class="backup-bar">
         <button type="button" id="export-btn">Export</button>
+        <button type="button" id="import-btn">Import…</button>
+        <input type="file" id="import-file" accept="application/json,.json" hidden />
+        <span id="backup-info"></span>
       </footer>
     </main>
     <div id="gtd-toast" class="notice toast" role="status" aria-live="polite" hidden></div>
