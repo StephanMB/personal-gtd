@@ -117,3 +117,50 @@ summary {
   font-style: italic;
   padding: 0.4rem 0;
 }
+
+/* --- Notices & backup bar (step 1: data safety) --- */
+
+.notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.notice[hidden] {
+  display: none;
+}
+
+.notice span {
+  flex: 1 1 16rem;
+}
+
+.notice button,
+.backup-bar button {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.notice-warning {
+  margin-bottom: 1rem;
+  border-color: #c77c02;
+  background: color-mix(in srgb, #c77c02 12%, transparent);
+}
+
+.backup-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 2rem;
+  font-size: 0.85rem;
+  color: #888;
+}

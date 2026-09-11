@@ -11,6 +11,7 @@ import '../styles/global.css';
   <body>
     <main>
       <h1>Personal GTD</h1>
+      <div id="gtd-status" class="notice notice-warning" role="alert" hidden></div>
       <form id="capture-form">
         <input
           id="capture-input"
@@ -21,6 +22,9 @@ import '../styles/global.css';
         <button type="submit">Add</button>
       </form>
       <div id="gtd-root"></div>
+      <footer class="backup-bar">
+        <button type="button" id="export-btn">Export</button>
+      </footer>
     </main>
     <script src="../lib/app.ts"></script>
   </body>

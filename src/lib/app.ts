@@ -1,5 +1,6 @@
 import { createItem, actionButtons, type Item, type Status } from './gtd';
-import { readItems, writeItems, quarantine } from './storage';
+import { readItems, writeItems, quarantine, onExternalChange } from './storage';
+import { serializeBackup, backupFilename, downloadText } from './backup';
 
 const SECTIONS: { status: Status; label: string }[] = [
   { status: 'inbox', label: 'Inbox' },
@@ -9,36 +10,199 @@ const SECTIONS: { status: Status; label: string }[] = [
   { status: 'done', label: 'Done' },
 ];
 
-function loadInitial(): Item[] {
-  const result = readItems();
-  // Set unreadable data aside before the first save can overwrite it.
-  if (result.kind === 'corrupt' || (result.kind === 'ok' && result.invalid > 0)) {
-    quarantine(result.raw);
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+
+let items: Item[] = [];
+/** False when storage is unavailable, or when unreadable data could not be set aside. */
+let canWrite = true;
+/** True when there are changes that exist only in memory. */
+let unsaved = false;
+let saveFailed = false;
+/** The unreadable data most recently set aside, so the same data is never copied twice. */
+let setAside: string | null = null;
+
+// ---------------------------------------------------------------------------
+// Persistence
+// ---------------------------------------------------------------------------
+
+/**
+ * The single path for every change. Re-reads storage first so a stale copy in
+ * this tab can never overwrite what another tab saved in the meantime —
+ * unless this tab holds changes that never reached storage: then memory is
+ * the newer copy and must win.
+ */
+function commit(mutate: (current: Item[]) => Item[]): void {
+  if (canWrite && !unsaved) {
+    const fresh = readItems();
+    if (fresh.kind === 'ok') {
+      items = fresh.items;
+      // Unreadable data appeared since startup: set it aside before the save
+      // below overwrites it.
+      if (fresh.invalid > 0) {
+        handleUnreadable(fresh.raw, `${fresh.invalid} saved item(s) could not be read and were left out.`);
+      }
+    } else if (fresh.kind === 'empty') {
+      items = [];
+    } else if (fresh.kind === 'corrupt') {
+      handleUnreadable(fresh.raw, 'Your saved data could not be read.');
+    }
   }
-  return result.kind === 'ok' ? result.items : [];
+  items = mutate(items);
+  save();
+  render();
 }
 
-let items: Item[] = loadInitial();
-
-function persist() {
+function save(): void {
+  if (!canWrite) {
+    unsaved = true;
+    return;
+  }
   const result = writeItems(items);
-  if (!result.ok) console.error('[gtd] save failed', result.error);
+  if (result.ok) {
+    unsaved = false;
+    if (saveFailed) {
+      saveFailed = false;
+      clearStatus();
+    }
+  } else {
+    unsaved = true;
+    saveFailed = true;
+    console.error('[gtd] save failed', result.error);
+    showStatus(
+      'Your last change could not be saved (browser storage may be full or blocked). Export your data now so nothing is lost.',
+      [{ label: 'Export', run: exportData }],
+    );
+  }
 }
 
-function moveItem(id: string, status: Status) {
-  const item = items.find((i) => i.id === id);
-  if (!item) return;
-  item.status = status;
-  item.updatedAt = Date.now();
-  persist();
-  render();
+/** Keep unreadable data out of harm's way, then tell the user. */
+function handleUnreadable(raw: string, what: string): void {
+  // Already copied (e.g. at startup, before the first save replaced it).
+  if (raw === setAside) return;
+  const download = { label: 'Download unreadable data', run: () => downloadText('gtd-unreadable-data.json', raw) };
+  const key = quarantine(raw);
+  if (key) {
+    setAside = raw;
+    showStatus(`${what} A copy was kept in this browser under "${key}".`, [download, dismiss]);
+  } else {
+    // We could not make a copy, so writing now would destroy the only one.
+    canWrite = false;
+    showStatus(`${what} Saving is paused so it is not overwritten. Download it first, then resume.`, [
+      download,
+      {
+        label: 'Resume saving',
+        run: () => {
+          canWrite = true;
+          clearStatus();
+          save();
+        },
+      },
+    ]);
+  }
 }
 
-function deleteItem(id: string) {
-  items = items.filter((i) => i.id !== id);
-  persist();
-  render();
+function boot(): void {
+  const result = readItems();
+  switch (result.kind) {
+    case 'empty':
+      items = [];
+      break;
+    case 'ok':
+      items = result.items;
+      if (result.invalid > 0) {
+        handleUnreadable(result.raw, `${result.invalid} saved item(s) could not be read and were left out.`);
+      }
+      break;
+    case 'corrupt':
+      items = [];
+      handleUnreadable(result.raw, 'Your saved data could not be read.');
+      break;
+    case 'unavailable':
+      canWrite = false;
+      console.error('[gtd] storage unavailable', result.error);
+      showStatus('Browser storage is unavailable, so nothing will be saved. Use Export before closing this tab.', [
+        { label: 'Export', run: exportData },
+      ]);
+      break;
+  }
+
+  onExternalChange(() => {
+    if (!canWrite || unsaved) return;
+    const fresh = readItems();
+    if (fresh.kind === 'ok' && fresh.invalid === 0) items = fresh.items;
+    else if (fresh.kind === 'empty') items = [];
+    else return;
+    render();
+  });
 }
+
+// ---------------------------------------------------------------------------
+// Commands
+// ---------------------------------------------------------------------------
+
+function captureItem(value: string): void {
+  commit((current) => [...current, createItem(value)]);
+}
+
+function moveItem(id: string, status: Status): void {
+  commit((current) =>
+    current.map((item) => (item.id === id ? { ...item, status, updatedAt: Date.now() } : item)),
+  );
+}
+
+function deleteItem(id: string): void {
+  commit((current) => current.filter((item) => item.id !== id));
+}
+
+function exportData(): void {
+  downloadText(backupFilename(), serializeBackup(items));
+}
+
+// ---------------------------------------------------------------------------
+// Notices
+// ---------------------------------------------------------------------------
+
+interface NoticeAction {
+  label: string;
+  run: () => void;
+}
+
+const dismiss: NoticeAction = { label: 'Dismiss', run: () => clearStatus() };
+
+function fillNotice(el: HTMLElement, message: string, actions: NoticeAction[]): void {
+  el.replaceChildren();
+  const text = document.createElement('span');
+  text.textContent = message;
+  el.appendChild(text);
+  for (const action of actions) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = action.label;
+    btn.addEventListener('click', action.run);
+    el.appendChild(btn);
+  }
+  el.hidden = false;
+}
+
+/** Persistent banner for problems that need the user's attention. */
+function showStatus(message: string, actions: NoticeAction[] = []): void {
+  const el = document.getElementById('gtd-status');
+  if (el) fillNotice(el, message, actions);
+}
+
+function clearStatus(): void {
+  const el = document.getElementById('gtd-status');
+  if (el) {
+    el.replaceChildren();
+    el.hidden = true;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
 
 function renderItem(item: Item): HTMLLIElement {
   const li = document.createElement('li');
@@ -77,7 +241,7 @@ function renderItem(item: Item): HTMLLIElement {
   return li;
 }
 
-function render() {
+function render(): void {
   const root = document.getElementById('gtd-root');
   if (!root) return;
   root.innerHTML = '';
@@ -111,7 +275,11 @@ function render() {
   }
 }
 
-function setupCaptureForm() {
+// ---------------------------------------------------------------------------
+// Wiring
+// ---------------------------------------------------------------------------
+
+function setupCaptureForm(): void {
   const form = document.getElementById('capture-form') as HTMLFormElement | null;
   const input = document.getElementById('capture-input') as HTMLInputElement | null;
   if (!form || !input) return;
@@ -120,12 +288,16 @@ function setupCaptureForm() {
     e.preventDefault();
     const value = input.value.trim();
     if (!value) return;
-    items.push(createItem(value));
-    persist();
+    captureItem(value);
     input.value = '';
-    render();
   });
 }
 
+function setupBackupControls(): void {
+  document.getElementById('export-btn')?.addEventListener('click', exportData);
+}
+
+boot();
 setupCaptureForm();
+setupBackupControls();
 render();
