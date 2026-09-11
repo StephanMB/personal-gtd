@@ -1,0 +1,6 @@
+[
+  { "id": "a1", "title": "Buy milk", "context": "errands", "status": "inbox", "createdAt": 1000, "updatedAt": 1000 },
+  { "id": "a2", "title": "Call dentist", "status": "next", "createdAt": 1000, "updatedAt": 2000 },
+  { "id": "a3", "title": "Renew passport", "status": "done", "createdAt": 1000, "updatedAt": 3000 },
+  { "id": "a4", "title": "Broken entry", "status": "archived", "createdAt": 1000, "updatedAt": 1000 }
+]
