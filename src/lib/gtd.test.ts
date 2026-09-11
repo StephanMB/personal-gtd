@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { loadItems, saveItems, createItem, parseCapture, actionButtons, type Item } from './gtd';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { loadItems, saveItems, createItem, newId, parseCapture, actionButtons, type Item } from './gtd';
 
 beforeEach(() => {
   localStorage.clear();
@@ -19,6 +19,43 @@ describe('parseCapture', () => {
       title: 'Buy milk',
       context: 'errands',
     });
+  });
+
+  it('does not split an @ in the middle of a word', () => {
+    expect(parseCapture('Email jan@minbzk.nl')).toEqual({ title: 'Email jan@minbzk.nl' });
+  });
+
+  it('keeps the whole input when stripping the context would leave an empty title', () => {
+    expect(parseCapture('@errands')).toEqual({ title: '@errands' });
+  });
+
+  it('only takes the last context', () => {
+    expect(parseCapture('Fix bike @home @weekend')).toEqual({
+      title: 'Fix bike @home',
+      context: 'weekend',
+    });
+  });
+});
+
+describe('newId', () => {
+  const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('returns a v4 UUID', () => {
+    expect(newId()).toMatch(UUID_V4);
+  });
+
+  it('falls back to getRandomValues when randomUUID is missing (insecure context)', () => {
+    const real = globalThis.crypto;
+    vi.stubGlobal('crypto', { getRandomValues: real.getRandomValues.bind(real) });
+    const a = newId();
+    const b = newId();
+    expect(a).toMatch(UUID_V4);
+    expect(b).toMatch(UUID_V4);
+    expect(a).not.toBe(b);
   });
 });
 
