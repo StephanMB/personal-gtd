@@ -1,7 +1,7 @@
 # Stage 1: Build
 FROM node:24-bookworm-slim AS builder
 WORKDIR /app
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 COPY . .
 RUN npm run build

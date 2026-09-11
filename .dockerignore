@@ -1,0 +1,12 @@
+# Never send host build state into the image: the Linux build must
+# install its own dependencies from package-lock.json.
+node_modules
+dist
+.astro
+
+# Not needed to build
+.git
+.claude
+*.log
+Dockerfile
+.dockerignore
