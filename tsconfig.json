@@ -1,3 +1,12 @@
 {
-  "extends": "astro/tsconfigs/strict"
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    // Imports carry explicit .ts extensions so Node can run tests without a bundler.
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    // Forbid syntax Node's type stripping can't erase (enums, namespaces, parameter properties).
+    "erasableSyntaxOnly": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  }
 }

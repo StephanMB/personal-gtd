@@ -4,7 +4,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 COPY . .
-RUN npm run build
+# Type-check, run the tests, then build: a broken build never becomes an image.
+RUN npm run verify
 
 # Stage 2: Production (unprivileged nginx for Kubernetes/OpenShift)
 FROM nginxinc/nginx-unprivileged:1.27-alpine
