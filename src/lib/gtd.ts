@@ -15,7 +15,8 @@ export function loadItems(): Item[] {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return [];
   try {
-    return JSON.parse(raw) as Item[];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as Item[]) : [];
   } catch {
     return [];
   }
@@ -45,4 +46,29 @@ export function createItem(input: string): Item {
     createdAt: now,
     updatedAt: now,
   };
+}
+
+export function actionButtons(item: Item): { label: string; status: Status }[] {
+  switch (item.status) {
+    case 'inbox':
+      return [
+        { label: '→ Next', status: 'next' },
+        { label: '→ Waiting', status: 'waiting' },
+        { label: '→ Someday', status: 'someday' },
+      ];
+    case 'next':
+    case 'waiting':
+      return [
+        { label: '✓ Done', status: 'done' },
+        { label: '→ Someday', status: 'someday' },
+        { label: '→ Inbox', status: 'inbox' },
+      ];
+    case 'someday':
+      return [
+        { label: '→ Next', status: 'next' },
+        { label: '→ Inbox', status: 'inbox' },
+      ];
+    case 'done':
+      return [{ label: '↺ Reopen', status: 'next' }];
+  }
 }

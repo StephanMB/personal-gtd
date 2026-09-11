@@ -1,4 +1,4 @@
-import { loadItems, saveItems, createItem, type Item, type Status } from './gtd';
+import { loadItems, saveItems, createItem, actionButtons, type Item, type Status } from './gtd';
 
 const SECTIONS: { status: Status; label: string }[] = [
   { status: 'inbox', label: 'Inbox' },
@@ -27,31 +27,6 @@ function deleteItem(id: string) {
   items = items.filter((i) => i.id !== id);
   persist();
   render();
-}
-
-function actionButtons(item: Item): { label: string; status: Status }[] {
-  switch (item.status) {
-    case 'inbox':
-      return [
-        { label: '→ Next', status: 'next' },
-        { label: '→ Waiting', status: 'waiting' },
-        { label: '→ Someday', status: 'someday' },
-      ];
-    case 'next':
-    case 'waiting':
-      return [
-        { label: '✓ Done', status: 'done' },
-        { label: '→ Someday', status: 'someday' },
-        { label: '→ Inbox', status: 'inbox' },
-      ];
-    case 'someday':
-      return [
-        { label: '→ Next', status: 'next' },
-        { label: '→ Inbox', status: 'inbox' },
-      ];
-    case 'done':
-      return [{ label: '↺ Reopen', status: 'next' }];
-  }
 }
 
 function renderItem(item: Item): HTMLLIElement {

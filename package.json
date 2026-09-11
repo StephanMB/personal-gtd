@@ -6,12 +6,16 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "astro": "^7.1.6"
   },
   "devDependencies": {
-    "typescript": "^7.0"
+    "happy-dom": "^20.12.0",
+    "typescript": "^7.0",
+    "vitest": "^4.1.11"
   }
 }
