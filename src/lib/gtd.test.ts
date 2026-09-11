@@ -1,9 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { loadItems, saveItems, createItem, newId, parseCapture, actionButtons, type Item } from './gtd';
-
-beforeEach(() => {
-  localStorage.clear();
-});
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import { createItem, newId, isItem, parseCapture, actionButtons, STATUSES, type Item } from './gtd';
 
 describe('parseCapture', () => {
   it('splits a trailing @context off the title', () => {
@@ -76,25 +72,41 @@ describe('createItem', () => {
   });
 });
 
-describe('loadItems / saveItems', () => {
-  it('round-trips items through localStorage', () => {
-    const item = createItem('Buy milk @errands');
-    saveItems([item]);
-    expect(loadItems()).toEqual([item]);
+describe('isItem', () => {
+  const valid = { id: 'x', title: 'ok', status: 'next', createdAt: 1, updatedAt: 1 };
+
+  it('accepts a freshly created item', () => {
+    expect(isItem(createItem('Buy milk @errands'))).toBe(true);
   });
 
-  it('returns [] when nothing has been stored yet', () => {
-    expect(loadItems()).toEqual([]);
+  it('accepts every known status', () => {
+    for (const status of STATUSES) {
+      expect(isItem({ ...valid, status })).toBe(true);
+    }
   });
 
-  it('returns [] on malformed JSON instead of throwing', () => {
-    localStorage.setItem('gtd:items', '{not valid json');
-    expect(loadItems()).toEqual([]);
+  it('rejects values that are not objects', () => {
+    expect(isItem(null)).toBe(false);
+    expect(isItem('item')).toBe(false);
+    expect(isItem([])).toBe(false);
   });
 
-  it('returns [] when the stored value is valid JSON but not an array', () => {
-    localStorage.setItem('gtd:items', JSON.stringify({ oops: 'not a list' }));
-    expect(loadItems()).toEqual([]);
+  it('rejects an unknown status', () => {
+    expect(isItem({ ...valid, status: 'archived' })).toBe(false);
+  });
+
+  it('rejects an empty id', () => {
+    expect(isItem({ ...valid, id: '' })).toBe(false);
+  });
+
+  it('rejects a non-string context', () => {
+    expect(isItem({ ...valid, context: 5 })).toBe(false);
+  });
+
+  it('rejects missing or non-finite timestamps', () => {
+    expect(isItem({ ...valid, updatedAt: undefined })).toBe(false);
+    expect(isItem({ ...valid, createdAt: null })).toBe(false);
+    expect(isItem({ ...valid, createdAt: Number.NaN })).toBe(false);
   });
 });
 

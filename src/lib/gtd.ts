@@ -1,5 +1,7 @@
 export type Status = 'inbox' | 'next' | 'waiting' | 'someday' | 'done';
 
+export const STATUSES: readonly Status[] = ['inbox', 'next', 'waiting', 'someday', 'done'];
+
 export interface Item {
   id: string;
   title: string;
@@ -9,21 +11,22 @@ export interface Item {
   updatedAt: number;
 }
 
-const STORAGE_KEY = 'gtd:items';
-
-export function loadItems(): Item[] {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as Item[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function saveItems(items: Item[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+/** Runtime check for data we did not produce in this session (storage, imports). */
+export function isItem(value: unknown): value is Item {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.id === 'string' &&
+    v.id.length > 0 &&
+    typeof v.title === 'string' &&
+    (v.context === undefined || typeof v.context === 'string') &&
+    typeof v.status === 'string' &&
+    (STATUSES as readonly string[]).includes(v.status) &&
+    typeof v.createdAt === 'number' &&
+    Number.isFinite(v.createdAt) &&
+    typeof v.updatedAt === 'number' &&
+    Number.isFinite(v.updatedAt)
+  );
 }
 
 /**

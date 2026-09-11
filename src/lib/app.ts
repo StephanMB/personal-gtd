@@ -1,4 +1,5 @@
-import { loadItems, saveItems, createItem, actionButtons, type Item, type Status } from './gtd';
+import { createItem, actionButtons, type Item, type Status } from './gtd';
+import { readItems, writeItems, quarantine } from './storage';
 
 const SECTIONS: { status: Status; label: string }[] = [
   { status: 'inbox', label: 'Inbox' },
@@ -8,10 +9,20 @@ const SECTIONS: { status: Status; label: string }[] = [
   { status: 'done', label: 'Done' },
 ];
 
-let items: Item[] = loadItems();
+function loadInitial(): Item[] {
+  const result = readItems();
+  // Set unreadable data aside before the first save can overwrite it.
+  if (result.kind === 'corrupt' || (result.kind === 'ok' && result.invalid > 0)) {
+    quarantine(result.raw);
+  }
+  return result.kind === 'ok' ? result.items : [];
+}
+
+let items: Item[] = loadInitial();
 
 function persist() {
-  saveItems(items);
+  const result = writeItems(items);
+  if (!result.ok) console.error('[gtd] save failed', result.error);
 }
 
 function moveItem(id: string, status: Status) {
