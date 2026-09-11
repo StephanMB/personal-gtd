@@ -153,7 +153,13 @@ function moveItem(id: string, status: Status): void {
 }
 
 function deleteItem(id: string): void {
+  const deleted = items.find((item) => item.id === id);
+  if (!deleted) return;
   commit((current) => current.filter((item) => item.id !== id));
+  showToast(`Deleted "${deleted.title}".`, {
+    label: 'Undo',
+    run: () => commit((current) => (current.some((i) => i.id === deleted.id) ? current : [...current, deleted])),
+  });
 }
 
 function exportData(): void {
@@ -198,6 +204,22 @@ function clearStatus(): void {
     el.replaceChildren();
     el.hidden = true;
   }
+}
+
+let toastTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Short-lived confirmation with an optional action (e.g. Undo). */
+function showToast(message: string, action?: NoticeAction): void {
+  const el = document.getElementById('gtd-toast');
+  if (!el) return;
+  clearTimeout(toastTimer);
+  const hide = () => {
+    el.hidden = true;
+    el.replaceChildren();
+  };
+  const actions = action ? [{ label: action.label, run: () => { hide(); action.run(); } }] : [];
+  fillNotice(el, message, actions);
+  toastTimer = setTimeout(hide, 8000);
 }
 
 // ---------------------------------------------------------------------------
