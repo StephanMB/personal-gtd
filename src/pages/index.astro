@@ -1,0 +1,27 @@
+---
+import '../styles/global.css';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Personal GTD</title>
+  </head>
+  <body>
+    <main>
+      <h1>Personal GTD</h1>
+      <form id="capture-form">
+        <input
+          id="capture-input"
+          type="text"
+          placeholder="Capture a thought... (try &quot;Buy milk @errands&quot;)"
+          autocomplete="off"
+        />
+        <button type="submit">Add</button>
+      </form>
+      <div id="gtd-root"></div>
+    </main>
+    <script src="../lib/app.ts"></script>
+  </body>
+</html>
