@@ -9,3 +9,6 @@ jobs:
         with: { node-version: 24, cache: npm }
       - run: npm ci
       - run: npm run verify
+      # End-to-end tests need a browser, so they run here and not in the Docker build.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
