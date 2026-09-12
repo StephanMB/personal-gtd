@@ -181,3 +181,67 @@ test('subscribers hear every state change and can unsubscribe', async () => {
   await store.dispatch({ type: 'capture', input: 'y' });
   assert.equal(calls, before);
 });
+
+test('the underlying error of a failed save is reported, not swallowed', async () => {
+  const storage = new MemoryStore();
+  const errors: unknown[] = [];
+  const store = openTab(storage, { onError: (_message, error) => errors.push(error) });
+  storage.failWrites = true;
+  await store.dispatch({ type: 'capture', input: 'x' });
+  assert.equal(store.getState().problem?.kind, 'save-failed');
+  assert.equal(errors.length, 1, 'the banner says what, onError says why');
+  assert.ok(errors[0] instanceof DOMException);
+});
+
+test('a bug inside a command is reported and answered, not left as a rejection', async () => {
+  const messages: string[] = [];
+  let broken = false;
+  const store = openTab(new MemoryStore(), {
+    repository: {
+      load: () => {
+        if (broken) throw new Error('boom');
+        return { kind: 'empty' };
+      },
+      save: () => ({ ok: true }),
+      stash: () => null,
+      subscribe: () => () => {},
+    },
+    onError: (message) => messages.push(message),
+  });
+  broken = true;
+  assert.deepEqual(await store.dispatch({ type: 'capture', input: 'x' }), { ok: false, reason: 'internal-error' });
+  assert.deepEqual(messages, ['[gtd] command failed']);
+});
+
+test('a newer schema appearing after boot locks the tab instead of being overwritten', async () => {
+  const storage = new MemoryStore();
+  const store = openTab(storage);
+  await store.dispatch({ type: 'capture', input: 'mine' });
+
+  const newer = JSON.stringify({ schemaVersion: 99, items: [] });
+  storage.data.set(DATA_KEY, newer);
+  await store.dispatch({ type: 'capture', input: 'after' });
+
+  assert.equal(store.getState().problem?.kind, 'newer');
+  assert.equal(storage.getItem(DATA_KEY), newer, 'an older build never writes over newer data');
+  assert.equal(store.getState().unsaved, true);
+});
+
+test('data that turns unreadable after boot is copied aside exactly once', async () => {
+  const storage = new MemoryStore();
+  const store = openTab(storage);
+  await store.dispatch({ type: 'capture', input: 'mine' });
+
+  storage.data.set(DATA_KEY, '{oops');
+  await store.dispatch({ type: 'capture', input: 'after' });
+
+  const problem = store.getState().problem;
+  assert.ok(problem?.kind === 'corrupt' && problem.copyKey);
+  const copies = () => [...storage.data.keys()].filter((k) => k.startsWith('gtd:quarantine:'));
+  assert.equal(copies().length, 1);
+  assert.equal(storage.data.get(copies()[0]), '{oops');
+  assert.deepEqual(titles(stored(storage).items), ['mine', 'after'], 'work continues on top of memory');
+
+  await store.dispatch({ type: 'capture', input: 'more' });
+  assert.equal(copies().length, 1, 'the same damaged data is never copied twice');
+});

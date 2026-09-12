@@ -1,8 +1,8 @@
 import type { Item, Status } from '../domain/model.ts';
-import { capture, move, remove, restore, purgeTombstones, type OpFailure, type OpResult } from '../domain/operations.ts';
+import { capture, move, remove, purgeTombstones, type OpFailure, type OpResult } from '../domain/operations.ts';
 import { mergeItems } from '../domain/merge.ts';
 import { newId as defaultNewId } from '../domain/ids.ts';
-import { DATA_KEY, LEGACY_KEY, type Repository } from '../persistence/repository.ts';
+import { DATA_KEY, LEGACY_KEY, type LoadResult, type Repository } from '../persistence/repository.ts';
 import { SCHEMA_VERSION } from '../persistence/schema.ts';
 import { diff, rebase, revert, type Change } from './undo.ts';
 
@@ -27,12 +27,21 @@ export type Command =
   | { type: 'capture'; input: string }
   | { type: 'move'; id: string; to: Status }
   | { type: 'remove'; id: string }
-  | { type: 'restore'; id: string }
   | { type: 'import'; items: Item[] }
   /** Undo the latest change, or a specific one (the toast's Undo button). */
   | { type: 'undo'; entryId?: number };
 
-export type CommandFailure = OpFailure | 'nothing-to-undo' | 'undo-conflict';
+/**
+ * 'not-deleted' is excluded: it can only come from restore(), which no command
+ * dispatches. Undo puts deleted items back instead. The domain operation stays
+ * for the Trash view that would need it.
+ * 'internal-error' is a bug in this app, not something a user can cause.
+ */
+export type CommandFailure =
+  | Exclude<OpFailure, 'not-deleted'>
+  | 'nothing-to-undo'
+  | 'undo-conflict'
+  | 'internal-error';
 
 export type DispatchResult =
   | { ok: true; entryId: number | null; counts?: { added: number; updated: number; deleted: number } }
@@ -49,7 +58,6 @@ export type Problem =
 
 export interface UndoEntry {
   id: number;
-  command: Command;
   changes: Change[];
 }
 
@@ -79,6 +87,13 @@ export interface StoreOptions {
   now?: () => number;
   newId?: () => string;
   undoLimit?: number;
+  /**
+   * Where the underlying error of a storage or command failure goes. The user
+   * sees a Problem or a failure reason; this is the detail that says why
+   * (quota, blocked, private mode), which is exactly what is missing when
+   * something goes wrong. Injected so the store stays testable.
+   */
+  onError?: (message: string, error: unknown) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -87,11 +102,19 @@ export interface StoreOptions {
 
 const BLOCKING: ReadonlySet<Problem['kind']> = new Set(['paused', 'newer', 'unavailable']);
 
-export function createStore({ repository: repo, now = Date.now, newId = defaultNewId, undoLimit = 50 }: StoreOptions): Store {
+export function createStore({
+  repository: repo,
+  now = Date.now,
+  newId = defaultNewId,
+  undoLimit = 50,
+  onError = (message, error) => console.error(message, error),
+}: StoreOptions): Store {
   let state: StoreState = { items: [], problem: null, unsaved: false, undoStack: [] };
   const listeners = new Set<(state: StoreState) => void>();
   let queue: Promise<unknown> = Promise.resolve();
   let nextEntryId = 1;
+  /** Unreadable data already copied aside, so the same data is never copied twice. */
+  let stashed: string | null = null;
 
   function set(patch: Partial<StoreState>): void {
     state = { ...state, ...patch };
@@ -107,12 +130,74 @@ export function createStore({ repository: repo, now = Date.now, newId = defaultN
     return run;
   }
 
+  /**
+   * Copy data we could not read aside before a save overwrites it. Returns the
+   * key, or null when even the copy did not fit.
+   */
+  function stash(prefix: string, raw: string): string | null {
+    if (raw === stashed) return null;
+    const key = repo.stash(prefix, raw);
+    if (key) stashed = raw;
+    return key;
+  }
+
+  /**
+   * Storage this tab must not adopt or overwrite, handled the same way at boot
+   * and later in the session: unreadable data is copied aside first, data from
+   * a newer build locks the tab, and unavailable storage is reported.
+   * Returns true when it handled the result.
+   */
+  function handleUnusable(result: LoadResult): boolean {
+    switch (result.kind) {
+      case 'corrupt': {
+        // The legacy key is never written, so it needs no copy.
+        if (result.source === LEGACY_KEY) {
+          set({ problem: { kind: 'corrupt', copyKey: null, leftInLegacy: true, raw: result.raw } });
+          return true;
+        }
+        if (result.raw === stashed) return true; // already set aside, banner already shown
+        const key = stash('gtd:quarantine:', result.raw);
+        set({
+          problem: key
+            ? { kind: 'corrupt', copyKey: key, leftInLegacy: false, raw: result.raw }
+            : { kind: 'paused', cause: 'corrupt', raw: result.raw },
+        });
+        return true;
+      }
+
+      case 'newer':
+        // Written by a newer build (another tab, or after a rollback).
+        if (state.problem?.kind !== 'newer') set({ problem: { kind: 'newer', version: result.version } });
+        return true;
+
+      case 'unavailable':
+        onError('[gtd] storage unavailable', result.error);
+        if (state.problem?.kind !== 'unavailable') set({ problem: { kind: 'unavailable' } });
+        return true;
+
+      default:
+        return false;
+    }
+  }
+
   /** Adopt storage when it is safe: never over memory that is ahead of it. */
   function refresh(): void {
     if (!canWrite() || state.unsaved) return;
     const fresh = repo.load();
-    if (fresh.kind === 'ok' && fresh.invalid === 0 && fresh.from === SCHEMA_VERSION) set({ items: fresh.items });
-    else if (fresh.kind === 'empty' && state.items.length > 0) set({ items: [] });
+    if (handleUnusable(fresh)) return;
+    if (fresh.kind === 'ok') {
+      // Entries we cannot read appeared since boot: set them aside before the
+      // next save replaces them.
+      if (fresh.invalid > 0 && fresh.source === DATA_KEY) {
+        const key = stash('gtd:quarantine:', fresh.raw);
+        if (key) set({ problem: { kind: 'unreadable-items', count: fresh.invalid, copyKey: key } });
+        else if (state.problem === null) set({ problem: { kind: 'paused', cause: 'unreadable-items', raw: fresh.raw } });
+        return;
+      }
+      if (fresh.from === SCHEMA_VERSION) set({ items: fresh.items });
+    } else if (fresh.kind === 'empty' && state.items.length > 0) {
+      set({ items: [] });
+    }
   }
 
   /** Commit `items` (plus any other state) and write it, reporting failure as a Problem. */
@@ -126,6 +211,7 @@ export function createStore({ repository: repo, now = Date.now, newId = defaultN
       const problem = state.problem?.kind === 'save-failed' ? null : state.problem;
       set({ ...patch, items, unsaved: false, problem });
     } else {
+      onError('[gtd] save failed', result.error);
       set({ ...patch, items, unsaved: true, problem: { kind: 'save-failed' } });
     }
   }
@@ -139,8 +225,6 @@ export function createStore({ repository: repo, now = Date.now, newId = defaultN
         return move(items, command.id, command.to, t);
       case 'remove':
         return remove(items, command.id, t);
-      case 'restore':
-        return restore(items, command.id, t);
     }
   }
 
@@ -166,70 +250,61 @@ export function createStore({ repository: repo, now = Date.now, newId = defaultN
       counts = { added: merged.added, updated: merged.updated, deleted: merged.deleted };
     } else {
       const result = apply(command, before);
-      if (!result.ok) return result;
+      if (!result.ok) {
+        // restore() is the only source of 'not-deleted' and nothing dispatches it.
+        return result as { ok: false; reason: CommandFailure };
+      }
       after = result.items;
     }
 
     const changes = diff(before, after);
     if (changes.length === 0) return { ok: true, entryId: null, counts };
-    const entry: UndoEntry = { id: nextEntryId++, command, changes };
+    const entry: UndoEntry = { id: nextEntryId++, changes };
     save(after, { undoStack: [...state.undoStack, entry].slice(-undoLimit) });
     return { ok: true, entryId: entry.id, counts };
   }
 
   function boot(): void {
     const result = repo.load();
-    switch (result.kind) {
-      case 'empty':
-        break;
+    if (!handleUnusable(result)) {
+      switch (result.kind) {
+        case 'empty':
+          break;
 
-      case 'ok': {
-        // Anything about to be overwritten that is not already safe elsewhere
-        // is stashed first. Legacy data is safe: LEGACY_KEY is never written.
-        const needsCopy = result.source === DATA_KEY && (result.invalid > 0 || result.from < SCHEMA_VERSION);
-        let problem: Problem | null = null;
-        if (needsCopy) {
-          const prefix = result.invalid > 0 ? 'gtd:quarantine:' : `gtd:pre-migration:v${result.from}:`;
-          const key = repo.stash(prefix, result.raw);
-          if (!key) {
-            set({
-              items: result.items,
-              problem: { kind: 'paused', cause: result.invalid > 0 ? 'unreadable-items' : 'migration', raw: result.raw },
-            });
-            break;
+        case 'ok': {
+          // Anything about to be overwritten that is not already safe elsewhere
+          // is stashed first. Legacy data is safe: LEGACY_KEY is never written.
+          const needsCopy = result.source === DATA_KEY && (result.invalid > 0 || result.from < SCHEMA_VERSION);
+          let problem: Problem | null = null;
+          if (needsCopy) {
+            const prefix = result.invalid > 0 ? 'gtd:quarantine:' : `gtd:pre-migration:v${result.from}:`;
+            const key = stash(prefix, result.raw);
+            if (!key) {
+              set({
+                items: result.items,
+                problem: { kind: 'paused', cause: result.invalid > 0 ? 'unreadable-items' : 'migration', raw: result.raw },
+              });
+              break;
+            }
+            if (result.invalid > 0) problem = { kind: 'unreadable-items', count: result.invalid, copyKey: key };
           }
-          if (result.invalid > 0) problem = { kind: 'unreadable-items', count: result.invalid, copyKey: key };
-        }
-        const purged = purgeTombstones(result.items, now());
-        set({ items: purged, problem });
-        if (purged.length !== result.items.length || result.from < SCHEMA_VERSION || result.invalid > 0) save(purged);
-        break;
-      }
-
-      case 'corrupt': {
-        if (result.source === LEGACY_KEY) {
-          set({ problem: { kind: 'corrupt', copyKey: null, leftInLegacy: true, raw: result.raw } });
+          const purged = purgeTombstones(result.items, now());
+          set({ items: purged, problem });
+          if (purged.length !== result.items.length || result.from < SCHEMA_VERSION || result.invalid > 0) save(purged);
           break;
         }
-        const key = repo.stash('gtd:quarantine:', result.raw);
-        set({
-          problem: key
-            ? { kind: 'corrupt', copyKey: key, leftInLegacy: false, raw: result.raw }
-            : { kind: 'paused', cause: 'corrupt', raw: result.raw },
-        });
-        break;
       }
-
-      case 'newer':
-        set({ problem: { kind: 'newer', version: result.version } });
-        break;
-
-      case 'unavailable':
-        set({ problem: { kind: 'unavailable' } });
-        break;
     }
 
-    repo.subscribe(() => void enqueue(refresh));
+    repo.subscribe(() =>
+      void enqueue(() => {
+        try {
+          refresh();
+        } catch (error) {
+          onError('[gtd] refresh failed', error);
+        }
+      }),
+    );
   }
 
   return {
@@ -238,7 +313,20 @@ export function createStore({ repository: repo, now = Date.now, newId = defaultN
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    dispatch: (command) => enqueue(() => run(command)),
+    /**
+     * A thrown error here is a bug, not something a user can cause: report it
+     * and answer with a failure, so the click says something went wrong
+     * instead of disappearing into an unhandled rejection.
+     */
+    dispatch: (command) =>
+      enqueue((): DispatchResult => {
+        try {
+          return run(command);
+        } catch (error) {
+          onError('[gtd] command failed', error);
+          return { ok: false, reason: 'internal-error' };
+        }
+      }),
     boot,
     dismissProblem() {
       if (state.problem && !BLOCKING.has(state.problem.kind) && state.problem.kind !== 'save-failed') set({ problem: null });

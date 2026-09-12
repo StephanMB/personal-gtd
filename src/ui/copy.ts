@@ -52,9 +52,9 @@ export const copy = {
     'not-found': 'That item no longer exists. It may have been changed in another tab.',
     'not-allowed': 'That item was moved in another tab. The list has been refreshed.',
     deleted: 'That item was deleted in another tab.',
-    'not-deleted': 'That item was already restored.',
     'nothing-to-undo': 'Nothing to undo.',
     'undo-conflict': "Can't undo: that item was changed again since, probably in another tab.",
+    'internal-error': 'Something went wrong, so your data was not changed.',
   } satisfies Record<CommandFailure, string>,
 
   backup: {
@@ -75,8 +75,14 @@ export const copy = {
         return p.leftInLegacy
           ? { text: 'Your saved data could not be read.', supporting: 'It was left untouched in this browser (gtd:items).' }
           : { text: 'Your saved data could not be read.', supporting: `A copy was kept in this browser under "${p.copyKey}".` };
-      case 'paused':
-        return { text: 'Your saved data could not be read, and no safety copy fits in storage.', supporting: 'Saving is paused so it is not overwritten. Download it first, then resume.' };
+      case 'paused': {
+        const cause = {
+          corrupt: 'Your saved data could not be read, and no safety copy fits in browser storage.',
+          'unreadable-items': 'Some saved items could not be read, and no safety copy fits in browser storage.',
+          migration: 'Your data needs an upgrade, and no safety copy fits in browser storage.',
+        }[p.cause];
+        return { text: cause, supporting: 'Saving is paused so nothing is overwritten. Download the data first, then resume.' };
+      }
       case 'newer':
         return { text: `Your data was saved by a newer version of this app (schema ${p.version}).`, supporting: "This version can't read it, so nothing is saved here. Reload once the newer version is deployed." };
       case 'unavailable':
