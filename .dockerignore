@@ -2,7 +2,6 @@
 # install its own dependencies from package-lock.json.
 node_modules
 dist
-.astro
 
 # Not needed to build
 .git

@@ -43,5 +43,15 @@ domain ← persistence ← store ← ui
   upgrading, and let the import guard, the accent guard and Playwright catch
   the rest.
 
+## Scope discipline
+- The step 4 document is a menu, not a queue. Query features (a view over data
+  that already exists) are cheap; entity features (a new record, a migration
+  that can never be edited, a new shape in every query) are permanent.
+- Build a feature when its absence has been felt three separate times, not when
+  it is described. `README.md` lists what this app will never do.
+- Every increment includes a deletion pass: what can go now that this exists?
+- `npm run budget` fails the build when the first load grows past its budget.
+  Raise it deliberately, with a reason, or make the app smaller.
+
 ## Why it is like this
 See `docs/step-*.md`. Read the relevant step before restructuring anything.

@@ -30,6 +30,19 @@ A context is a trailing `@word`. Email addresses are left alone.
 - Unreadable data is never overwritten: it is set aside, the app says so, and
   the sidebar offers it back under "Recovered data".
 
+## What this will never do
+
+A written no is easier to hold to than an unwritten one. This app will not grow:
+
+- calendar or email integration
+- time tracking, estimates or reports
+- sharing, collaboration, or anything multi-user
+- priorities, flags or colour-coded urgency
+- notifications that nag
+
+New features earn their place by being missed three separate times. Capture the
+annoyance in the app as an item; most of them die there, which is the point.
+
 ## Stack
 
 Vite + Preact (with signals) + [NLDD design system](https://github.com/MinBZK/storybook)
