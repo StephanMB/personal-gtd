@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * Guards the layering: domain <- persistence <- ui.
+ * Guards the layering: domain <- persistence <- store <- ui.
  * Cheap to keep, and it stops the structure from eroding one import at a time.
  */
 const SRC = fileURLToPath(new URL('.', import.meta.url));
@@ -24,6 +24,10 @@ function imports(file: string): string[] {
 const RULES: Record<string, { mayImport: string[]; forbiddenGlobals: RegExp | null }> = {
   domain: { mayImport: ['domain'], forbiddenGlobals: /\b(window|document|localStorage|sessionStorage|navigator)\b/ },
   persistence: { mayImport: ['domain', 'persistence'], forbiddenGlobals: /\b(document|navigator)\b/ },
+  store: {
+    mayImport: ['domain', 'persistence', 'store'],
+    forbiddenGlobals: /\b(window|document|localStorage|sessionStorage|navigator|preact)\b/,
+  },
 };
 
 for (const [layer, rule] of Object.entries(RULES)) {
