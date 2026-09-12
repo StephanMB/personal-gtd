@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { diff, rebase, revert } from './undo.ts';
+import type { Item } from '../domain/model.ts';
 import { makeItem } from '../domain/test-helpers.ts';
 
 const a = makeItem({ id: 'a', updatedAt: 10 });
@@ -37,8 +38,8 @@ test('revert refuses when an affected item changed since', () => {
 });
 
 test('rebase lets an older entry be undone after a newer one', () => {
-  const a1 = { ...a, status: 'next' as const, updatedAt: 20 }; // entry 1: inbox -> next
-  const a2 = { ...a1, status: 'someday' as const, updatedAt: 30 }; // entry 2: next -> someday
+  const a1: Item = { ...a, status: 'next', updatedAt: 20 }; // entry 1: inbox -> next
+  const a2: Item = { ...a1, status: 'someday', updatedAt: 30 }; // entry 2: next -> someday
   const e1 = { changes: diff([a], [a1]) };
   const e2 = { changes: diff([a1], [a2]) };
   const undo2 = revert([a2], e2.changes, 40);
@@ -49,4 +50,22 @@ test('rebase lets an older entry be undone after a newer one', () => {
   assert.ok(undo1.ok, 'no false conflict');
   assert.equal(undo1.ok && undo1.items[0].status, 'inbox');
   assert.equal(rebase([e1], []).at(0), e1, 'untouched entries keep their identity');
+});
+
+test('diff and revert work on any stored record', () => {
+  interface Project {
+    id: string;
+    updatedAt: number;
+    deletedAt?: number;
+    title: string;
+  }
+  const before: Project[] = [{ id: 'p1', updatedAt: 10, title: 'Paint kitchen' }];
+  const after: Project[] = [{ id: 'p1', updatedAt: 20, title: 'Paint the kitchen' }];
+  const changes = diff(before, after);
+  assert.equal(changes.length, 1);
+  const reverted = revert(after, changes, 99);
+  assert.ok(reverted.ok);
+  if (!reverted.ok) return;
+  assert.equal(reverted.items[0].title, 'Paint kitchen');
+  assert.equal(reverted.items[0].updatedAt, 99);
 });

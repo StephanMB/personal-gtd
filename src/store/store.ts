@@ -9,7 +9,7 @@ import {
   type OpFailure,
   type OpResult,
 } from '../domain/operations.ts';
-import { mergeItems } from '../domain/merge.ts';
+import { mergeRecords } from '../domain/merge.ts';
 import { newId as defaultNewId } from '../domain/ids.ts';
 import {
   DATA_KEY,
@@ -78,7 +78,7 @@ export type Problem =
 
 export interface UndoEntry {
   id: number;
-  changes: Change[];
+  changes: Change<Item>[];
 }
 
 export interface StoreState {
@@ -279,7 +279,7 @@ export function createStore({
     let after: Item[];
     let counts: { added: number; updated: number; deleted: number } | undefined;
     if (command.type === 'import') {
-      const merged = mergeItems(before, command.items);
+      const merged = mergeRecords(before, command.items);
       after = merged.items;
       counts = { added: merged.added, updated: merged.updated, deleted: merged.deleted };
     } else {

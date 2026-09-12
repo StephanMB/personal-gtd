@@ -1,7 +1,7 @@
-import type { Item } from './model.ts';
+import type { StoredRecord } from './model.ts';
 
-export interface MergeResult {
-  items: Item[];
+export interface MergeResult<T extends StoredRecord> {
+  items: T[];
   added: number;
   updated: number;
   deleted: number;
@@ -13,21 +13,24 @@ export interface MergeResult {
  * a bumped updatedAt, they win over older live copies too, so importing an old
  * backup cannot resurrect something deleted since.
  *
+ * Generic over stored records for the same reason undo is: a second collection
+ * merges with this function rather than a copy of it.
+ *
  * Properties (see merge.test.ts): idempotent, never loses the newer copy.
  */
-export function mergeItems(current: Item[], incoming: Item[]): MergeResult {
-  const byId = new Map(current.map((item) => [item.id, item]));
+export function mergeRecords<T extends StoredRecord>(current: readonly T[], incoming: readonly T[]): MergeResult<T> {
+  const byId = new Map(current.map((record) => [record.id, record]));
   let added = 0;
   let updated = 0;
   let deleted = 0;
-  for (const item of incoming) {
-    const existing = byId.get(item.id);
+  for (const record of incoming) {
+    const existing = byId.get(record.id);
     if (!existing) {
-      byId.set(item.id, item);
-      if (item.deletedAt === undefined) added++;
-    } else if (item.updatedAt > existing.updatedAt) {
-      byId.set(item.id, item);
-      if (item.deletedAt !== undefined && existing.deletedAt === undefined) deleted++;
+      byId.set(record.id, record);
+      if (record.deletedAt === undefined) added++;
+    } else if (record.updatedAt > existing.updatedAt) {
+      byId.set(record.id, record);
+      if (record.deletedAt !== undefined && existing.deletedAt === undefined) deleted++;
       else updated++;
     }
   }

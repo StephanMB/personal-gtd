@@ -3,6 +3,17 @@ export type Status = 'inbox' | 'next' | 'waiting' | 'someday' | 'done';
 export const STATUSES: readonly Status[] = ['inbox', 'next', 'waiting', 'someday', 'done'];
 
 /**
+ * What undo and merge need from anything stored: an identity, a version, and
+ * a way to be gone. Items have it; the next collection will have it too, which
+ * is why those two mechanisms are written against this and not against Item.
+ */
+export interface StoredRecord {
+  id: string;
+  updatedAt: number;
+  deletedAt?: number;
+}
+
+/**
  * Schema version 2.
  * - completedAt: set exactly when status === 'done'.
  * - deletedAt:   set on a tombstone. Tombstones stay in storage (so deletions
@@ -10,7 +21,7 @@ export const STATUSES: readonly Status[] = ['inbox', 'next', 'waiting', 'someday
  * - updatedAt:   bumped on EVERY change, including delete and restore; merge
  *                relies on it to decide which copy is newer.
  */
-export interface Item {
+export interface Item extends StoredRecord {
   id: string;
   title: string;
   context?: string;
