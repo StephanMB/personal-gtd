@@ -159,7 +159,7 @@ Fix: a small "Recovered data" section (sidebar or a sheet) that lists those keys
 
 | Item | Where it belongs | Note |
 |---|---|---|
-| `gtd:lastExportAt` lives in its own localStorage key, outside the document, so it isn't exported and a fresh browser always says "never exported" | 4.5, which introduces settings | The only app state outside the document |
+| ~~`gtd:lastExportAt` lives in its own localStorage key, outside the document~~ **Done:** settings section in schema v4 | 4.5, which introduces settings | The only app state outside the document |
 | Whole-list writes; a failed save plus concurrent tabs can still overwrite | 4.8 (IndexedDB, per-record writes) | The last of step 1's data-safety limitations |
 | Cross-tab refresh via the `storage` event | 4.8 (`BroadcastChannel`) | The localStorage repository can keep its version |
 | Sidebar rows are buttons, so no middle-click or "open in new tab" | 4.2, when projects get real pages | Fine for five fixed lists; not fine for a hundred projects |

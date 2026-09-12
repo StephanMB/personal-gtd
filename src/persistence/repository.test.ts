@@ -52,7 +52,7 @@ test('legacy data is migrated in memory and saving never touches the legacy key'
   assert.equal(loaded.from, 1);
   assert.equal(loaded.items[0].completedAt, 2);
 
-  assert.equal(repo.save({ items: loaded.items, projects: [] }).ok, true);
+  assert.equal(repo.save({ items: loaded.items, projects: [], settings: {} }).ok, true);
   assert.equal(store.getItem(LEGACY_KEY), v1, 'legacy copy untouched (rollback safety)');
   assert.equal(JSON.parse(store.getItem(DATA_KEY)!).schemaVersion, SCHEMA_VERSION);
   assert.deepEqual(JSON.parse(store.getItem(DATA_KEY)!).projects, [], 'the document carries every collection');
@@ -62,7 +62,7 @@ test('legacy data is migrated in memory and saving never touches the legacy key'
 });
 
 test('current data wins over legacy data', () => {
-  const current = JSON.stringify({ schemaVersion: SCHEMA_VERSION, items: [], projects: [] });
+  const current = JSON.stringify({ schemaVersion: SCHEMA_VERSION, items: [], projects: [], settings: {} });
   const { repo } = setup({ [LEGACY_KEY]: v1, [DATA_KEY]: current });
   const loaded = repo.load();
   assert.ok(loaded.kind === 'ok' && loaded.items.length === 0);
@@ -78,14 +78,14 @@ test('corrupt, newer and unavailable are reported, never thrown', () => {
     throw new DOMException('blocked', 'SecurityError');
   }, null);
   assert.equal(throwing.load().kind, 'unavailable');
-  assert.equal(throwing.save({ items: [], projects: [] }).ok, false);
+  assert.equal(throwing.save({ items: [], projects: [], settings: {} }).ok, false);
   assert.equal(throwing.stash('p:', 'x'), null);
 });
 
 test('save failures are returned, not thrown', () => {
   const { store, repo } = setup();
   store.failWrites = true;
-  const r = repo.save({ items: [], projects: [] });
+  const r = repo.save({ items: [], projects: [], settings: {} });
   assert.equal(r.ok, false);
 });
 

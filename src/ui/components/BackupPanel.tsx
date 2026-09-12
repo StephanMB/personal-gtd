@@ -1,12 +1,14 @@
-import { useRef, useState } from 'preact/hooks';
+import { useRef } from 'preact/hooks';
+import { appState } from '../app-state.ts';
 import { exportData, importFile } from '../commands.ts';
 import { copy } from '../copy.ts';
-import { readLastExport } from '../last-export.ts';
 
 export function BackupPanel() {
   const fileInput = useRef<HTMLInputElement>(null);
-  const [lastExport, setLastExport] = useState(readLastExport);
-  const days = lastExport === null ? null : Math.floor((Date.now() - lastExport) / 86_400_000);
+  // The timestamp lives in the document now, so it is exported and merged
+  // like everything else rather than sitting in a stray key.
+  const lastExport = appState.value.settings.lastExportAt;
+  const days = lastExport === undefined ? null : Math.floor((Date.now() - lastExport) / 86_400_000);
 
   return (
     <div class="backup">
@@ -15,10 +17,7 @@ export function BackupPanel() {
           size="sm"
           start-icon="export"
           text={copy.backup.export}
-          onClick={() => {
-            exportData();
-            setLastExport(Date.now());
-          }}
+          onClick={exportData}
         />
         <nldd-button size="sm" start-icon="import" text={copy.backup.import} onClick={() => fileInput.current?.click()} />
       </nldd-button-group>

@@ -5,7 +5,6 @@ import type { Command, DispatchResult } from '../store/store.ts';
 import { appState, repository, store } from './app-state.ts';
 import { copy } from './copy.ts';
 import { downloadText } from './download.ts';
-import { writeLastExport } from './last-export.ts';
 import { notify } from './notify.ts';
 
 /**
@@ -57,9 +56,19 @@ export async function undoLast(): Promise<void> {
 export function exportData(): void {
   downloadText(
     backupFilename(),
-    serializeBackup({ items: [...appState.value.items], projects: [...appState.value.projects] }),
+    serializeBackup({
+      items: [...appState.value.items],
+      projects: [...appState.value.projects],
+      settings: appState.value.settings,
+    }),
   );
-  writeLastExport(Date.now());
+  void run({ type: 'settings', patch: { lastExportAt: Date.now() } });
+}
+
+/** Records the pass, which is what the sidebar nudge counts from. */
+export async function finishReview(): Promise<void> {
+  await run({ type: 'settings', patch: { lastReviewedAt: Date.now() } });
+  notify(copy.review.finished, { variant: 'success' });
 }
 
 /**
@@ -72,7 +81,7 @@ export async function importFile(file: File): Promise<void> {
     notify(copy.backup.importFailed(parsed.error), { variant: 'critical' });
     return;
   }
-  const result = await run({ type: 'import', items: parsed.items, projects: parsed.projects });
+  const result = await run({ type: 'import', items: parsed.items, projects: parsed.projects, settings: parsed.settings });
   if (!result.ok || !result.counts) return;
   const entryId = result.entryId;
   notify(copy.backup.imported(result.counts), {

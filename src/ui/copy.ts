@@ -109,6 +109,33 @@ export const copy = {
     statusDropped: 'Dropped',
   },
 
+  review: {
+    title: 'Weekly review',
+    intro: 'A pass over everything, so you can close the laptop believing the system is complete.',
+    steps: {
+      inbox: 'Empty the inbox',
+      projects: 'Projects with no next action',
+      waiting: 'Waiting for, older than a week',
+      someday: 'Someday, untouched for months',
+      completed: 'What you finished this week',
+      backup: 'Export a backup',
+    },
+    clear: 'Clear',
+    clarify: (count: number) => `Clarify ${count} item${count === 1 ? '' : 's'}`,
+    toChase: (count: number) => `${count} to chase`,
+    toRevisit: (count: number) => `${count} to promote or drop`,
+    nothing: 'Nothing here to deal with.',
+    completedCount: (count: number) =>
+      count === 0 ? 'Nothing finished this week yet.' : `${count} finished this week`,
+    exportNow: 'Export now',
+    exportedToday: 'Exported today.',
+    finish: 'Finish review',
+    finished: 'Review done. See you next week.',
+    never: 'Never reviewed',
+    sinceReview: (days: number) =>
+      days === 0 ? 'Reviewed today' : `Reviewed ${days} day${days === 1 ? '' : 's'} ago`,
+  },
+
   recovered: {
     heading: 'Recovered data',
     /** Just the moment: the row and the button labels put it in a sentence. */

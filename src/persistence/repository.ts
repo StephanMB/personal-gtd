@@ -1,5 +1,5 @@
 import type { Item, Project } from '../domain/model.ts';
-import { migrate, SCHEMA_VERSION, type DocContents, type StoredDoc } from './schema.ts';
+import { migrate, SCHEMA_VERSION, type DocContents, type Settings, type StoredDoc } from './schema.ts';
 
 export const DATA_KEY = 'gtd:data';
 /** Step 0/1 storage. Read once for migration, then left untouched as a rollback copy. */
@@ -15,6 +15,7 @@ export type LoadResult =
       kind: 'ok';
       items: Item[];
       projects: Project[];
+      settings: Settings;
       invalid: number;
       raw: string;
       /** Version the data was stored in; < SCHEMA_VERSION means it was migrated in memory. */
@@ -83,6 +84,7 @@ function parse(raw: string, source: typeof DATA_KEY | typeof LEGACY_KEY): LoadRe
         kind: 'ok',
         items: result.doc.items,
         projects: result.doc.projects,
+        settings: result.doc.settings,
         invalid: result.invalid,
         raw,
         from: result.from,

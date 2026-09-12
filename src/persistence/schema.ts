@@ -1,18 +1,30 @@
 import { isItem, isProject, type Item, type Project } from '../domain/model.ts';
 
 /**
+ * App state that is not a record: when you last reviewed, when you last
+ * exported. It lives in the document so it is exported, migrated and merged
+ * like everything else, rather than in a stray localStorage key.
+ */
+export interface Settings {
+  lastReviewedAt?: number;
+  lastExportAt?: number;
+}
+
+/**
  * Stored document format.
  *   v1 (step 0/1): a bare array of items under "gtd:items".
  *   v2 (step 2):   { schemaVersion: 2, items } under "gtd:data";
  *                  items gain completedAt and deletedAt.
  *   v3 (step 4):   the document gains a projects collection.
+ *   v4 (step 4):   the document gains a settings section.
  */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /** Everything the app stores, without the envelope. */
 export interface DocContents {
   items: Item[];
   projects: Project[];
+  settings: Settings;
 }
 
 export interface StoredDoc extends DocContents {
@@ -49,7 +61,27 @@ const MIGRATIONS: Record<number, (doc: unknown) => unknown> = {
    * build writes { schemaVersion, items } and the projects would be gone.
    */
   2: (doc) => ({ ...(doc as object), schemaVersion: 3, projects: [] }),
+
+  /**
+   * A section, not a field: the same reasoning as the projects collection.
+   * An optional FIELD on a record survives an older build, because operations
+   * copy records with a spread. A top-level section does not: save() writes an
+   * explicit shape, so a v3 build would drop it on the next write.
+   */
+  3: (doc) => ({ ...(doc as object), schemaVersion: 4, settings: {} }),
 };
+
+const timestamp = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
+
+/** Settings are read leniently: an unreadable one is simply not set. */
+function readSettings(value: unknown): Settings {
+  if (typeof value !== 'object' || value === null) return {};
+  const raw = value as Record<string, unknown>;
+  const settings: Settings = {};
+  if (timestamp(raw.lastReviewedAt)) settings.lastReviewedAt = raw.lastReviewedAt;
+  if (timestamp(raw.lastExportAt)) settings.lastExportAt = raw.lastExportAt;
+  return settings;
+}
 
 export function detectVersion(data: unknown): number | null {
   if (Array.isArray(data)) return 1;
@@ -86,7 +118,12 @@ export function migrate(data: unknown): MigrateResult {
   const projects = rawProjects.filter(isProject);
   return {
     kind: 'ok',
-    doc: { schemaVersion: SCHEMA_VERSION, items, projects },
+    doc: {
+      schemaVersion: SCHEMA_VERSION,
+      items,
+      projects,
+      settings: readSettings((doc as { settings?: unknown }).settings),
+    },
     from,
     invalid: rawItems.length - items.length + (rawProjects.length - projects.length),
   };

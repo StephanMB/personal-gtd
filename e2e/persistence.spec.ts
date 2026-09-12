@@ -16,7 +16,7 @@ test('step-1 data is upgraded on first load', async ({ page }) => {
   });
   await page.reload();
   await expect(row(page, 'From step 1')).toBeVisible();
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('gtd:data')!).schemaVersion)).toBe(3);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('gtd:data')!).schemaVersion)).toBe(4);
 });
 
 test('a second tab sees captures from the first', async ({ page, context }) => {

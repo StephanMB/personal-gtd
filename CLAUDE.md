@@ -16,8 +16,11 @@ domain ← persistence ← store ← ui
   return data (a reason, a Problem), never a sentence.
 - A migration that has shipped is never edited, only followed by a new one.
   Every migration gets a fixture test.
-- Adding an OPTIONAL field needs no schema bump: bumping makes older builds
-  read-only. Only bump when existing data must be transformed.
+- Adding an OPTIONAL field to a record needs no schema bump: bumping makes
+  older builds read-only, and operations copy records with a spread, so an
+  unknown field survives a round trip through an older build.
+- A new top-level COLLECTION or SECTION does need one. save() writes an
+  explicit shape, so an older build silently drops what it does not know.
 - Deletions are tombstones (`deletedAt`), never removals. Every change bumps
   `updatedAt`; merge depends on it.
 - Operations return failures as values; they don't throw for anything a user

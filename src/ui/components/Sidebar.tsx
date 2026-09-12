@@ -1,7 +1,7 @@
 import { STATUSES, type Status } from '../../domain/model.ts';
-import { lists, projectViews } from '../app-state.ts';
+import { appState, lists, projectViews } from '../app-state.ts';
 import { copy } from '../copy.ts';
-import { LIST_KEYS, PROJECTS_KEY } from '../keys.ts';
+import { LIST_KEYS, PROJECTS_KEY, REVIEW_KEY } from '../keys.ts';
 import { navigate } from '../router.ts';
 import { BackupPanel } from './BackupPanel.tsx';
 import { RecoveredPanel } from './RecoveredPanel.tsx';
@@ -14,9 +14,13 @@ const ICONS: Record<Status, string> = {
   done: 'check-mark-circle',
 };
 
-export function Sidebar({ current }: { current: Status | 'projects' | null }) {
+export function Sidebar({ current }: { current: Status | 'projects' | 'review' | null }) {
   const byStatus = lists.value;
   const { active, stalled } = projectViews.value;
+  const lastReviewed = appState.value.settings.lastReviewedAt;
+  const daysSinceReview = lastReviewed === undefined ? null : Math.floor((Date.now() - lastReviewed) / 86_400_000);
+  // A week is the point of a weekly review; never reviewed counts as overdue.
+  const reviewOverdue = daysSinceReview === null || daysSinceReview >= 7;
   return (
     <nldd-page sticky-header>
       {/* A visual title, not a heading: nldd-top-title-bar renders an h1 and
@@ -81,6 +85,30 @@ export function Sidebar({ current }: { current: Status | 'projects' | null }) {
               <nldd-spacer-cell size="8" />
               <nldd-cell>
                 <nldd-keyboard-shortcut size="sm" variant="simple" keys={PROJECTS_KEY} />
+              </nldd-cell>
+            </nldd-list-item>
+
+            <nldd-list-item
+              button
+              selected={current === 'review' || undefined}
+              onClick={() => navigate({ view: 'review' })}
+            >
+              <nldd-icon-cell size="20" icon="check-list" />
+              <nldd-spacer-cell size="8" />
+              <nldd-text-cell
+                text={copy.review.title}
+                supporting-text={
+                  daysSinceReview === null ? copy.review.never : copy.review.sinceReview(daysSinceReview)
+                }
+              />
+              {reviewOverdue && (
+                <nldd-cell>
+                  <nldd-badge size="sm" color="warning" text={daysSinceReview === null ? '!' : `${daysSinceReview}d`} />
+                </nldd-cell>
+              )}
+              <nldd-spacer-cell size="8" />
+              <nldd-cell>
+                <nldd-keyboard-shortcut size="sm" variant="simple" keys={REVIEW_KEY} />
               </nldd-cell>
             </nldd-list-item>
           </nldd-list>

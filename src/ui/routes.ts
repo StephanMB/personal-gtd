@@ -7,6 +7,7 @@ import { STATUSES, type Status } from '../domain/model.ts';
 export type Route =
   | { view: 'list'; status: Status }
   | { view: 'clarify' }
+  | { view: 'review' }
   | { view: 'projects' }
   | { view: 'project'; id: string };
 
@@ -16,6 +17,8 @@ export function pathFor(route: Route): string {
   switch (route.view) {
     case 'clarify':
       return '/clarify';
+    case 'review':
+      return '/review';
     case 'projects':
       return '/projects';
     case 'project':
@@ -31,6 +34,7 @@ export function parseRoute(pathname: string): Route | null {
   if (segments.length === 0) return HOME;
   if (segments.length === 1) {
     if (segments[0] === 'clarify') return { view: 'clarify' };
+    if (segments[0] === 'review') return { view: 'review' };
     if (segments[0] === 'projects') return { view: 'projects' };
     if ((STATUSES as readonly string[]).includes(segments[0])) return { view: 'list', status: segments[0] as Status };
   }

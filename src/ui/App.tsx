@@ -6,6 +6,7 @@ import { ClarifyPage } from './components/ClarifyPage.tsx';
 import { ListPage } from './components/ListPage.tsx';
 import { ProjectPage } from './components/ProjectPage.tsx';
 import { ProjectsPage } from './components/ProjectsPage.tsx';
+import { ReviewPage } from './components/ReviewPage.tsx';
 import { Sidebar } from './components/Sidebar.tsx';
 
 /**
@@ -21,7 +22,13 @@ export function App() {
   }, [current]);
   const view = current ?? HOME;
   const selected =
-    view.view === 'list' ? view.status : view.view === 'projects' || view.view === 'project' ? 'projects' : null;
+    view.view === 'list'
+      ? view.status
+      : view.view === 'projects' || view.view === 'project'
+        ? 'projects'
+        : view.view === 'review'
+          ? 'review'
+          : null;
 
   return (
     <nldd-app-view>
@@ -32,6 +39,8 @@ export function App() {
         <nldd-split-view-pane slot="main" has-content>
           {view.view === 'clarify' ? (
             <ClarifyPage />
+          ) : view.view === 'review' ? (
+            <ReviewPage />
           ) : view.view === 'projects' ? (
             <ProjectsPage />
           ) : view.view === 'project' ? (

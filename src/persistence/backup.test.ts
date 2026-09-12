@@ -7,7 +7,7 @@ const item = { id: 'a', title: 'A', status: 'done', createdAt: 1, updatedAt: 2 }
 test('a round trip keeps tombstones, and carries every collection', () => {
   const items = [{ ...item, completedAt: 2 }, { id: 't', title: 'gone', status: 'inbox' as const, createdAt: 1, updatedAt: 5, deletedAt: 5 }];
   const projects = [{ id: 'p1', title: 'Kitchen painted', status: 'active' as const, createdAt: 1, updatedAt: 1 }];
-  const r = parseBackup(serializeBackup({ items, projects }));
+  const r = parseBackup(serializeBackup({ items, projects, settings: {} }));
   assert.ok(r.ok);
   assert.deepEqual(r.ok && r.items, items);
   assert.deepEqual(r.ok && r.projects, projects, 'projects export without the backup format changing');

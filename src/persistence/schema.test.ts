@@ -25,6 +25,7 @@ test('v1 fixture migrates to the current schema', () => {
   assert.equal(done?.completedAt, 3000, 'completedAt backfilled from updatedAt');
   assert.equal(r.doc.items.find((i) => i.id === 'a2')?.completedAt, undefined);
   assert.deepEqual(r.doc.projects, [], 'and arrives with the collection v3 added');
+  assert.deepEqual(r.doc.settings, {}, 'and the section v4 added');
 });
 
 test('current-version documents pass through unchanged', () => {
@@ -32,6 +33,7 @@ test('current-version documents pass through unchanged', () => {
     schemaVersion: SCHEMA_VERSION,
     items: [{ id: 'x', title: 't', status: 'inbox', createdAt: 1, updatedAt: 1 }],
     projects: [{ id: 'p', title: 'Kitchen painted', status: 'active', createdAt: 1, updatedAt: 1 }],
+    settings: { lastReviewedAt: 1234 },
   };
   const r = migrate(doc);
   assert.ok(r.kind === 'ok' && r.from === SCHEMA_VERSION && r.invalid === 0);

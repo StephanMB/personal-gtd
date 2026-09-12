@@ -142,7 +142,7 @@ test('boot: step-1 data is migrated and saved without a problem', () => {
   storage.data.set(LEGACY_KEY, v1);
   const store = openTab(storage);
   assert.equal(store.getState().problem, null);
-  assert.equal(stored(storage).schemaVersion, 3);
+  assert.equal(stored(storage).schemaVersion, 4);
   assert.equal(storage.getItem(LEGACY_KEY), v1);
 });
 
@@ -166,11 +166,11 @@ test('import merges, reports counts, and is undoable as one step', async () => {
   const store = openTab(new MemoryStore());
   await store.dispatch({ type: 'capture', input: 'mine' });
   const incoming = [{ id: 'x', title: 'imported', status: 'next' as const, createdAt: 1, updatedAt: 1 }];
-  const r = await store.dispatch({ type: 'import', items: incoming, projects: [] });
+  const r = await store.dispatch({ type: 'import', items: incoming, projects: [], settings: {} });
   assert.deepEqual(r.ok && r.counts, { added: 1, updated: 0, deleted: 0 });
   await store.dispatch({ type: 'undo' });
   assert.deepEqual(titles(live([...store.getState().items])), ['mine']);
-  const again = await store.dispatch({ type: 'import', items: [], projects: [] });
+  const again = await store.dispatch({ type: 'import', items: [], projects: [], settings: {} });
   assert.deepEqual(again, { ok: true, entryId: null, counts: { added: 0, updated: 0, deleted: 0 } });
 });
 
@@ -295,7 +295,7 @@ test('projects load, survive a save, and import alongside items', async () => {
   assert.deepEqual(stored(storage).projects, [project], 'and an item command does not drop it');
 
   const incoming = { id: 'p2', title: 'Taxes filed', status: 'active' as const, createdAt: 2, updatedAt: 2 };
-  const r = await store.dispatch({ type: 'import', items: [], projects: [incoming] });
+  const r = await store.dispatch({ type: 'import', items: [], projects: [incoming], settings: {} });
   assert.deepEqual(r.ok && r.counts, { added: 1, updated: 0, deleted: 0 });
   assert.deepEqual(stored(storage).projects.map((p: { id: string }) => p.id), ['p1', 'p2']);
 

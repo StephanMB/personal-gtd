@@ -24,7 +24,7 @@ import {
   type LoadResult,
   type Repository,
 } from '../persistence/repository.ts';
-import { SCHEMA_VERSION, type DocContents } from '../persistence/schema.ts';
+import { SCHEMA_VERSION, type DocContents, type Settings } from '../persistence/schema.ts';
 import { diff, rebaseChanges, revert, type Change } from './undo.ts';
 
 /**
@@ -56,7 +56,9 @@ export type Command =
   | { type: 'promote'; id: string }
   | { type: 'renameProject'; id: string; title: string }
   | { type: 'setProjectStatus'; id: string; status: ProjectStatus }
-  | { type: 'import'; items: Item[]; projects: Project[] }
+  | { type: 'import'; items: Item[]; projects: Project[]; settings: Settings }
+  /** When you last reviewed or exported. Not undoable: it is a fact, not a change. */
+  | { type: 'settings'; patch: Partial<Settings> }
   /** Undo the latest change, or a specific one (the toast's Undo button). */
   | { type: 'undo'; entryId?: number };
 
@@ -99,6 +101,7 @@ export interface StoreState {
   /** All items, tombstones included. Views go through domain/queries. */
   readonly items: readonly Item[];
   readonly projects: readonly Project[];
+  readonly settings: Settings;
   readonly problem: Problem | null;
   /** Changes exist that are not in storage. The UI warns before closing. */
   readonly unsaved: boolean;
@@ -137,6 +140,17 @@ export interface StoreOptions {
 
 const BLOCKING: ReadonlySet<Problem['kind']> = new Set(['paused', 'newer', 'unavailable']);
 
+/** Later wins, per setting: a backup knows when it was made. */
+function mergeSettings(current: Settings, incoming: Settings): Settings {
+  const merged: Settings = { ...current };
+  for (const key of ['lastReviewedAt', 'lastExportAt'] as const) {
+    const value = incoming[key];
+    const mine = merged[key];
+    if (value !== undefined && (mine === undefined || value > mine)) merged[key] = value;
+  }
+  return merged;
+}
+
 export function createStore({
   repository: repo,
   now = Date.now,
@@ -144,7 +158,7 @@ export function createStore({
   undoLimit = 50,
   onError = (message, error) => console.error(message, error),
 }: StoreOptions): Store {
-  let state: StoreState = { items: [], projects: [], problem: null, unsaved: false, undoStack: [] };
+  let state: StoreState = { items: [], projects: [], settings: {}, problem: null, unsaved: false, undoStack: [] };
   const listeners = new Set<(state: StoreState) => void>();
   let queue: Promise<unknown> = Promise.resolve();
   let nextEntryId = 1;
@@ -236,11 +250,11 @@ export function createStore({
         // every component new objects and re-render the lists for nothing.
         if (fresh.raw === lastRaw) return;
         lastRaw = fresh.raw;
-        set({ items: fresh.items, projects: fresh.projects });
+        set({ items: fresh.items, projects: fresh.projects, settings: fresh.settings });
       }
     } else if (fresh.kind === 'empty' && (state.items.length > 0 || state.projects.length > 0)) {
       lastRaw = null;
-      set({ items: [], projects: [] });
+      set({ items: [], projects: [], settings: {} });
     }
   }
 
@@ -267,7 +281,10 @@ export function createStore({
   const withProjects = (result: ProjectOpResult, items: Item[]): DocOpResult =>
     result.ok ? { ok: true, items, projects: result.projects } : result;
 
-  function apply(command: Exclude<Command, { type: 'undo' } | { type: 'import' }>, before: DocContents): DocOpResult {
+  function apply(
+    command: Exclude<Command, { type: 'undo' } | { type: 'import' } | { type: 'settings' }>,
+    before: DocContents,
+  ): DocOpResult {
     const t = now();
     const { items, projects } = before;
     switch (command.type) {
@@ -316,22 +333,33 @@ export function createStore({
           : { ...e, items: rebasedItems, projects: rebasedProjects };
       });
 
-    save({ items: items.items, projects: projects.items }, { undoStack: remaining });
+    save({ items: items.items, projects: projects.items, settings: state.settings }, { undoStack: remaining });
     return { ok: true, entryId: null };
   }
 
   function run(command: Command): DispatchResult {
     refresh();
-    const before: DocContents = { items: [...state.items], projects: [...state.projects] };
+    const before: DocContents = {
+      items: [...state.items],
+      projects: [...state.projects],
+      settings: state.settings,
+    };
 
     if (command.type === 'undo') return undo(command.entryId, before);
+
+    // Recording a review or an export is a fact about the past, so it is saved
+    // straight away and there is nothing to undo.
+    if (command.type === 'settings') {
+      save({ ...before, settings: { ...before.settings, ...command.patch } });
+      return { ok: true, entryId: null };
+    }
 
     let after: DocContents;
     let counts: { added: number; updated: number; deleted: number } | undefined;
     if (command.type === 'import') {
       const items = mergeRecords(before.items, command.items);
       const projects = mergeRecords(before.projects, command.projects);
-      after = { items: items.items, projects: projects.items };
+      after = { items: items.items, projects: projects.items, settings: mergeSettings(before.settings, command.settings) };
       counts = {
         added: items.added + projects.added,
         updated: items.updated + projects.updated,
@@ -343,7 +371,7 @@ export function createStore({
         // restore() is the only source of 'not-deleted' and nothing dispatches it.
         return result as { ok: false; reason: CommandFailure };
       }
-      after = { items: result.items, projects: result.projects };
+      after = { items: result.items, projects: result.projects, settings: before.settings };
     }
 
     const changed = {
@@ -376,6 +404,7 @@ export function createStore({
               set({
                 items: result.items,
                 projects: result.projects,
+                settings: result.settings,
                 problem: {
                   kind: 'paused',
                   cause: result.invalid > 0 ? 'unreadable-items' : 'migration',
@@ -388,10 +417,11 @@ export function createStore({
           }
           const items = purgeTombstones(result.items, now());
           const projects = purgeTombstones(result.projects, now());
+          const settings = result.settings;
           lastRaw = result.raw;
-          set({ items, projects, problem });
+          set({ items, projects, settings, problem });
           const purged = items.length !== result.items.length || projects.length !== result.projects.length;
-          if (purged || result.from < SCHEMA_VERSION || result.invalid > 0) save({ items, projects });
+          if (purged || result.from < SCHEMA_VERSION || result.invalid > 0) save({ items, projects, settings });
           break;
         }
       }
@@ -435,7 +465,7 @@ export function createStore({
     resumeSaving() {
       if (state.problem?.kind !== 'paused') return;
       set({ problem: null });
-      save({ items: [...state.items], projects: [...state.projects] });
+      save({ items: [...state.items], projects: [...state.projects], settings: state.settings });
     },
   };
 }

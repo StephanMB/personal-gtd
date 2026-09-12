@@ -88,3 +88,17 @@ body {
   font-size: 0.875em;
   color: var(--primitives-color-coolgray-600);
 }
+
+.review-intro {
+  margin: 0;
+  font-size: 0.875em;
+  color: var(--primitives-color-coolgray-600);
+}
+
+.review-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitives-space-8);
+  align-items: start;
+  margin-block: var(--primitives-space-8);
+}

@@ -1,5 +1,5 @@
 import type { Item, Project } from '../domain/model.ts';
-import { migrate, SCHEMA_VERSION, type DocContents, type StoredDoc } from './schema.ts';
+import { migrate, SCHEMA_VERSION, type DocContents, type Settings, type StoredDoc } from './schema.ts';
 
 const FORMAT = 'personal-gtd-backup';
 
@@ -39,7 +39,7 @@ export function backupFilename(now = new Date()): string {
 }
 
 export type ParseBackupResult =
-  | { ok: true; items: Item[]; projects: Project[]; invalid: number }
+  | { ok: true; items: Item[]; projects: Project[]; settings: Settings; invalid: number }
   | { ok: false; error: string };
 
 /**
@@ -71,7 +71,13 @@ export function parseBackup(text: string): ParseBackupResult {
   const result = migrate(payload);
   switch (result.kind) {
     case 'ok':
-      return { ok: true, items: result.doc.items, projects: result.doc.projects, invalid: result.invalid };
+      return {
+        ok: true,
+        items: result.doc.items,
+        projects: result.doc.projects,
+        settings: result.doc.settings,
+        invalid: result.invalid,
+      };
     case 'newer':
       return { ok: false, error: `This backup was made by a newer version of the app (schema ${result.version}).` };
     case 'corrupt':

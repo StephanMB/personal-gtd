@@ -47,3 +47,34 @@ export function stalledProjects(projects: readonly Project[], items: readonly It
   );
   return activeProjects(projects).filter((project) => !moving.has(project.id));
 }
+
+const DAY = 24 * 60 * 60 * 1000;
+
+/** Waiting-for older than this is worth chasing. */
+export const STALE_WAITING_MS = 7 * DAY;
+/** Someday untouched for this long is worth promoting or dropping. */
+export const STALE_SOMEDAY_MS = 90 * DAY;
+
+/**
+ * The three queries the weekly review is made of. No new data: the most
+ * valuable screen in the app is a handful of filters over what is already
+ * there, which is what the layering was for.
+ */
+export function staleWaiting(items: readonly Item[], now: number, olderThan = STALE_WAITING_MS): Item[] {
+  return live(items)
+    .filter((item) => item.status === 'waiting' && now - item.updatedAt >= olderThan)
+    .sort((a, b) => a.updatedAt - b.updatedAt);
+}
+
+export function untouchedSomeday(items: readonly Item[], now: number, olderThan = STALE_SOMEDAY_MS): Item[] {
+  return live(items)
+    .filter((item) => item.status === 'someday' && now - item.updatedAt >= olderThan)
+    .sort((a, b) => a.updatedAt - b.updatedAt);
+}
+
+/** What you finished in a period: the part that makes a review feel worth doing. */
+export function completedBetween(items: readonly Item[], from: number, to: number): Item[] {
+  return live(items)
+    .filter((item) => item.status === 'done' && item.completedAt !== undefined && item.completedAt >= from && item.completedAt <= to)
+    .sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0));
+}
