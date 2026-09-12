@@ -1,5 +1,11 @@
 # Step 2: Groundwork
 
+> **Snapshot from step 2.** Step 3 replaced the UI layer described here
+> (`src/ui/app.ts` became a Preact app over a store in `src/store/`) and moved
+> all persistence policy out of the UI. The domain, schema and repository
+> described here are still current. See [`README.md`](README.md).
+
+
 Implementation guide for `personal-gtd`, step 2 of the refactoring plan. It follows [`step-1-data-safety.md`](step-1-data-safety.md) and assumes that step is applied. If you skipped step 1, this still works: the stored data format it migrates from is the same.
 
 **What this step is for.** Step 1 made the app *safe*. Step 2 makes it *changeable*. Every feature on the roadmap (projects, contexts as records, defer dates, the weekly review, sync) means changing the data model and adding rules. Today the rules live in button-rendering code, the data has no version, and nothing is tested, so each of those features would be surgery on `app.ts` with no safety net. After this step:
@@ -219,6 +225,11 @@ Tests cover all three, plus idempotence and "newer wins in both directions".
 - A migration that has shipped is **never edited**, only followed by a new one. Someone's browser or backup file may be at any version.
 - Each migration gets a **fixture**: a real sample of the old format in `fixtures/`, plus a test for the exact result. Fixtures are frozen snapshots of history, which is why they're files and not generated in the test.
 - Migration must be **idempotent**: migrating current data changes nothing (tested).
+- **Adding an optional field needs no bump.** A version bump makes older builds
+  treat the data as unreadable (principle 4), so it costs every tab that has not
+  reloaded. It works because operations copy items with a spread, so fields an
+  older build does not know survive a round trip. Bump only when existing data
+  must actually be transformed.
 
 **Pre-migration copy.** When a future version (v2 → v3) migrates data under `gtd:data` itself, the app first stashes the raw value at `gtd:pre-migration:v2:<timestamp>`. If that stash fails, it pauses saving and offers a download, exactly like step 1's quarantine. For v1 → v2 this isn't needed, because the legacy key already *is* the copy.
 

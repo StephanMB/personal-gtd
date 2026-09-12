@@ -1,5 +1,13 @@
 # Step 1: Data safety
 
+> **Snapshot from step 1.** Later steps moved things: data now lives under
+> `gtd:data` (a versioned document), not `gtd:items`, so the console snippets in
+> the test script target the wrong key; `src/lib/` no longer exists (step 2 split
+> it into `domain/`, `persistence/`, `store/` and `ui/`); and the UI was rebuilt
+> on Vite, Preact and a design system in step 3. The reasoning here still holds;
+> the file names and keys do not. See [`README.md`](README.md).
+
+
 Implementation guide for `personal-gtd`. This covers step 1 of the refactoring plan: making sure the app never loses or silently corrupts what you capture. It doesn't restructure the app yet (that's step 2), and it doesn't add features beyond what data safety needs.
 
 **How to use this document.** Work through the sections in order. Each one is a self-contained commit and says what to change, why, and how to check it. You can follow it yourself or hand it to a coding agent as-is. The complete code is in the appendix. It was type-checked in strict mode and exercised in Chromium (see *Verification status* at the end).
