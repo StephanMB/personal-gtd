@@ -220,6 +220,31 @@ export const en = {
   },
   problemActions: { download: 'Download data', resume: 'Resume saving', export: 'Export' },
 
+  demo: {
+    try: 'Try a demo',
+    running: 'Demo data',
+    explain: 'A sample system to click around in. Your own lists are untouched.',
+    leave: 'Leave the demo',
+    reset: 'Start the demo over',
+    content: {
+      inboxRoof: 'Something Ruud said about the roof',
+      inboxSlides: 'Slides for the Thursday session',
+      inboxPermit: 'Renew the parking permit',
+      nextNotary: 'Email the notary about the deed',
+      nextRehearsal: 'Book the rehearsal room',
+      waitingQuote: 'Quote from the plumber',
+      somedaySailing: 'Learn to sail',
+      doneTaxes: 'File the tax return',
+      doneBikeLight: 'Fix the bike light',
+      donePassport: 'Renew the passport',
+      projectHouse: 'House sale completed',
+      projectGarden: 'Garden ready for summer',
+      contextErrands: 'errands',
+      contextEmail: 'email',
+      contextCalls: 'calls',
+    },
+  },
+
   appearance: {
     theme: 'Appearance',
     system: 'System',

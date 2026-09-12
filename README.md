@@ -53,6 +53,15 @@ A written no is easier to hold to than an unwritten one. This app will not grow:
 New features earn their place by being missed three separate times. Capture the
 annoyance in the app as an item; most of them die there, which is the point.
 
+## Trying it out
+
+"Try a demo" in the sidebar opens a filled-in system: a few things captured, a
+project that has stopped, something waiting too long, a review that is overdue.
+It lives in its own document under a separate key, so your own lists are not
+read, written or merged while it runs; leaving puts you straight back. Only the
+appearance and language choices carry over, so it does not feel like a
+different app.
+
 ## Appearance and language
 
 The sidebar carries two choices: appearance (system, light or dark) and

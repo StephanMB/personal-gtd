@@ -1,10 +1,13 @@
 import { computed, effect, signal } from '@preact/signals';
 import { applyAppearance } from './appearance.ts';
 import { language } from './copy.ts';
+import { en } from './copy-en.ts';
+import { nl } from './copy-nl.ts';
+import { demoDocument, isDemoUrl } from './demo.ts';
 import type { HintContext, HintId } from './hints.ts';
 import { STATUSES, type Status } from '../domain/model.ts';
 import { activeProjects, itemsInStatus, stalledProjects } from '../domain/queries.ts';
-import { createLocalStorageRepository } from '../persistence/repository.ts';
+import { createLocalStorageRepository, DATA_KEY, DEMO_KEY } from '../persistence/repository.ts';
 import { createStore } from '../store/store.ts';
 
 /**
@@ -13,8 +16,29 @@ import { createStore } from '../store/store.ts';
  * subscribe(); components read signals, and Preact re-renders exactly the
  * components that read a signal that changed.
  */
+/**
+ * The demo is a second document under its own key, chosen from the URL before
+ * anything is read. Your own lists are not read, written or merged while it is
+ * on: the only thing that crosses over is how the app looks and which language
+ * it speaks, so the demo does not feel like a different app.
+ */
+export const isDemo = isDemoUrl(window.location.search);
+
 /** One repository, shared by the store and by the recovered-data surface. */
-export const repository = createLocalStorageRepository();
+export const repository = createLocalStorageRepository(
+  () => window.localStorage,
+  window,
+  isDemo ? DEMO_KEY : DATA_KEY,
+);
+
+if (isDemo) {
+  const real = createLocalStorageRepository().load();
+  const carried = real.kind === 'ok' ? { theme: real.settings.theme, language: real.settings.language } : {};
+  if (repository.load().kind === 'empty') {
+    const words = (carried.language === 'nl' ? nl : en).demo.content;
+    repository.save(demoDocument(Date.now(), words, carried));
+  }
+}
 
 export const store = createStore({ repository });
 store.boot();

@@ -5,6 +5,9 @@ export const DATA_KEY = 'gtd:data';
 /** Step 0/1 storage. Read once for migration, then left untouched as a rollback copy. */
 export const LEGACY_KEY = 'gtd:items';
 
+/** A sandbox document: the demo fills this and never touches the real one. */
+export const DEMO_KEY = 'gtd:demo';
+
 /** Prefixes under which data that could not be read is set aside. */
 export const QUARANTINE_PREFIX = 'gtd:quarantine:';
 export const PRE_MIGRATION_PREFIX = 'gtd:pre-migration:';
@@ -108,7 +111,11 @@ function savedAtFrom(key: string): Date | null {
 export function createLocalStorageRepository(
   getStore: () => KeyValueStore = () => window.localStorage,
   events: Pick<Window, 'addEventListener' | 'removeEventListener'> | null = typeof window === 'undefined' ? null : window,
+  /** Which document to read and write. The demo passes its own sandbox key. */
+  dataKey: string = DATA_KEY,
 ): Repository {
+  // Step-1 data is only ever migrated into the real document, never a sandbox.
+  const readsLegacy = dataKey === DATA_KEY;
   function writeStashed(key: string, raw: string): boolean {
     try {
       getStore().setItem(key, raw);
@@ -124,8 +131,8 @@ export function createLocalStorageRepository(
       let legacy: string | null = null;
       try {
         const store = getStore();
-        raw = store.getItem(DATA_KEY);
-        if (raw === null) legacy = store.getItem(LEGACY_KEY);
+        raw = store.getItem(dataKey);
+        if (raw === null && readsLegacy) legacy = store.getItem(LEGACY_KEY);
       } catch (error) {
         return { kind: 'unavailable', error };
       }
@@ -138,7 +145,7 @@ export function createLocalStorageRepository(
       const doc: StoredDoc = { schemaVersion: SCHEMA_VERSION, ...contents };
       const raw = JSON.stringify(doc);
       try {
-        getStore().setItem(DATA_KEY, raw);
+        getStore().setItem(dataKey, raw);
         return { ok: true, raw };
       } catch (error) {
         return { ok: false, error };
@@ -194,7 +201,7 @@ export function createLocalStorageRepository(
       if (!events) return () => {};
       const listener = (event: Event) => {
         const key = (event as StorageEvent).key;
-        if (key === DATA_KEY || key === null) callback();
+        if (key === dataKey || key === null) callback();
       };
       events.addEventListener('storage', listener);
       return () => events.removeEventListener('storage', listener);

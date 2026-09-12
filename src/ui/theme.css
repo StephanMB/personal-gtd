@@ -20,35 +20,38 @@ body {
 /*
  * 1. Accent colour. NLDD's accent points at lintblauw, the Rijksoverheid
  *    colour. This is a personal tool, not a government service, so it points
- *    at another palette from the same system. One palette name to change;
- *    every accent-coloured component follows. Remove this block to go back.
+ *    at another palette from the same system: donkergroen, which is muted
+ *    enough to stay out of the way (roughly half the chroma of the brighter
+ *    palettes) while still reading as an accent. One palette name to change;
+ *    every accent-coloured component follows. A test checks that every accent
+ *    step is overridden and that the palette it points at exists.
  */
 :root {
-  --primitives-color-accent-0: var(--primitives-color-violet-0);
-  --primitives-color-accent-25: var(--primitives-color-violet-25);
-  --primitives-color-accent-50: var(--primitives-color-violet-50);
-  --primitives-color-accent-75: var(--primitives-color-violet-75);
-  --primitives-color-accent-100: var(--primitives-color-violet-100);
-  --primitives-color-accent-150: var(--primitives-color-violet-150);
-  --primitives-color-accent-200: var(--primitives-color-violet-200);
-  --primitives-color-accent-250: var(--primitives-color-violet-250);
-  --primitives-color-accent-300: var(--primitives-color-violet-300);
-  --primitives-color-accent-350: var(--primitives-color-violet-350);
-  --primitives-color-accent-400: var(--primitives-color-violet-400);
-  --primitives-color-accent-450: var(--primitives-color-violet-450);
-  --primitives-color-accent-500: var(--primitives-color-violet-500);
-  --primitives-color-accent-550: var(--primitives-color-violet-550);
-  --primitives-color-accent-600: var(--primitives-color-violet-600);
-  --primitives-color-accent-650: var(--primitives-color-violet-650);
-  --primitives-color-accent-700: var(--primitives-color-violet-700);
-  --primitives-color-accent-750: var(--primitives-color-violet-750);
-  --primitives-color-accent-800: var(--primitives-color-violet-800);
-  --primitives-color-accent-850: var(--primitives-color-violet-850);
-  --primitives-color-accent-900: var(--primitives-color-violet-900);
-  --primitives-color-accent-925: var(--primitives-color-violet-925);
-  --primitives-color-accent-950: var(--primitives-color-violet-950);
-  --primitives-color-accent-975: var(--primitives-color-violet-975);
-  --primitives-color-accent-1000: var(--primitives-color-violet-1000);
+  --primitives-color-accent-0: var(--primitives-color-donkergroen-0);
+  --primitives-color-accent-25: var(--primitives-color-donkergroen-25);
+  --primitives-color-accent-50: var(--primitives-color-donkergroen-50);
+  --primitives-color-accent-75: var(--primitives-color-donkergroen-75);
+  --primitives-color-accent-100: var(--primitives-color-donkergroen-100);
+  --primitives-color-accent-150: var(--primitives-color-donkergroen-150);
+  --primitives-color-accent-200: var(--primitives-color-donkergroen-200);
+  --primitives-color-accent-250: var(--primitives-color-donkergroen-250);
+  --primitives-color-accent-300: var(--primitives-color-donkergroen-300);
+  --primitives-color-accent-350: var(--primitives-color-donkergroen-350);
+  --primitives-color-accent-400: var(--primitives-color-donkergroen-400);
+  --primitives-color-accent-450: var(--primitives-color-donkergroen-450);
+  --primitives-color-accent-500: var(--primitives-color-donkergroen-500);
+  --primitives-color-accent-550: var(--primitives-color-donkergroen-550);
+  --primitives-color-accent-600: var(--primitives-color-donkergroen-600);
+  --primitives-color-accent-650: var(--primitives-color-donkergroen-650);
+  --primitives-color-accent-700: var(--primitives-color-donkergroen-700);
+  --primitives-color-accent-750: var(--primitives-color-donkergroen-750);
+  --primitives-color-accent-800: var(--primitives-color-donkergroen-800);
+  --primitives-color-accent-850: var(--primitives-color-donkergroen-850);
+  --primitives-color-accent-900: var(--primitives-color-donkergroen-900);
+  --primitives-color-accent-925: var(--primitives-color-donkergroen-925);
+  --primitives-color-accent-950: var(--primitives-color-donkergroen-950);
+  --primitives-color-accent-975: var(--primitives-color-donkergroen-975);
+  --primitives-color-accent-1000: var(--primitives-color-donkergroen-1000);
 }
 
 /* 2. The few layouts that are not a component. Primitives only, no raw values. */
@@ -109,6 +112,16 @@ body {
 
 .appearance-label {
   margin: var(--primitives-space-8) 0 var(--primitives-space-4);
+  font-size: 0.8125em;
+  color: var(--primitives-color-coolgray-600);
+}
+
+.demo {
+  margin-block-start: var(--primitives-space-16);
+}
+
+.demo-explain {
+  margin: var(--primitives-space-4) 0 var(--primitives-space-8);
   font-size: 0.8125em;
   color: var(--primitives-color-coolgray-600);
 }

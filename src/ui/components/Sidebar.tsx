@@ -5,6 +5,7 @@ import { LIST_KEYS, PROJECTS_KEY, REVIEW_KEY } from '../keys.ts';
 import { navigate } from '../router.ts';
 import { BackupPanel } from './BackupPanel.tsx';
 import { AppearancePanel } from './AppearancePanel.tsx';
+import { DemoPanel } from './DemoPanel.tsx';
 import { RecoveredPanel } from './RecoveredPanel.tsx';
 
 const ICONS: Record<Status, string> = {
@@ -126,6 +127,7 @@ export function Sidebar({ current }: { current: Status | 'projects' | 'review' |
         <BackupPanel />
         <RecoveredPanel />
         <AppearancePanel />
+        <DemoPanel />
       </nldd-simple-section>
     </nldd-page>
   );

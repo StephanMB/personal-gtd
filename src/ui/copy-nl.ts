@@ -233,6 +233,31 @@ export const nl: Dictionary = {
   },
   problemActions: { download: 'Gegevens downloaden', resume: 'Opslaan hervatten', export: 'Exporteren' },
 
+  demo: {
+    try: 'Bekijk een demo',
+    running: 'Demogegevens',
+    explain: 'Een voorbeeldsysteem om in rond te klikken. Je eigen lijsten blijven onaangeroerd.',
+    leave: 'Demo verlaten',
+    reset: 'Demo opnieuw beginnen',
+    content: {
+      inboxRoof: 'Iets wat Ruud zei over het dak',
+      inboxSlides: 'Slides voor de sessie van donderdag',
+      inboxPermit: 'Parkeervergunning verlengen',
+      nextNotary: 'Notaris mailen over de akte',
+      nextRehearsal: 'Oefenruimte reserveren',
+      waitingQuote: 'Offerte van de loodgieter',
+      somedaySailing: 'Leren zeilen',
+      doneTaxes: 'Belastingaangifte doen',
+      doneBikeLight: 'Fietslamp maken',
+      donePassport: 'Paspoort verlengen',
+      projectHouse: 'Huis verkocht',
+      projectGarden: 'Tuin klaar voor de zomer',
+      contextErrands: 'boodschappen',
+      contextEmail: 'e-mail',
+      contextCalls: 'bellen',
+    },
+  },
+
   appearance: {
     theme: 'Weergave',
     system: 'Systeem',

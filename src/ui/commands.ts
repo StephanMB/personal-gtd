@@ -3,6 +3,7 @@ import { parseBackup, serializeBackup, backupFilename } from '../persistence/bac
 import type { StashedCopy } from '../persistence/repository.ts';
 import type { Command, DispatchResult } from '../store/store.ts';
 import { appState, repository, store } from './app-state.ts';
+import { demoDocument, DEMO_PARAM } from './demo.ts';
 import { copy } from './copy.ts';
 import type { Theme } from './appearance.ts';
 import type { Language } from './copy.ts';
@@ -141,6 +142,25 @@ export async function setTheme(theme: Theme): Promise<void> {
 
 export async function setLanguage(chosen: Language): Promise<void> {
   await run({ type: 'settings', patch: { language: chosen } });
+}
+
+/**
+ * Entering and leaving the demo is a page load: the repository picks its
+ * document once, at startup, which is what keeps the two apart.
+ */
+export function enterDemo(): void {
+  window.location.href = `/inbox?${DEMO_PARAM}`;
+}
+
+export function leaveDemo(): void {
+  window.location.href = '/inbox';
+}
+
+/** Overwrites the sandbox with a fresh one. Only reachable inside the demo. */
+export function resetDemo(): void {
+  const { theme, language: chosen } = appState.value.settings;
+  repository.save(demoDocument(Date.now(), copy.demo.content, { theme, language: chosen }));
+  window.location.reload();
 }
 
 export const dismissProblem = () => store.dismissProblem();
