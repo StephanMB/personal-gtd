@@ -19,7 +19,8 @@ export function ItemRow({ item }: { item: Item }) {
       )}
       <nldd-spacer-cell size="8" />
       <nldd-cell>
-        <nldd-button-group size="sm">
+        {/* nldd-button-group stacks vertically by default, which makes every row tall. */}
+        <nldd-button-group size="sm" orientation="horizontal">
           {TRANSITIONS[item.status].map((to) => {
             const label = copy.moveLabel(item.status, to);
             return (

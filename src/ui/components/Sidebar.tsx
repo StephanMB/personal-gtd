@@ -17,7 +17,11 @@ export function Sidebar({ current }: { current: Status }) {
   const byStatus = lists.value;
   return (
     <nldd-page sticky-header>
-      <nldd-top-title-bar slot="header" text={copy.appName} />
+      {/* A visual title, not a heading: nldd-top-title-bar renders an h1 and
+          the page title in the main pane is the h1 of this page. */}
+      <nldd-title slot="header" size={4}>
+        {copy.appName}
+      </nldd-title>
       <nldd-simple-section>
         {/* The skip link wraps the navigation; activating it jumps past it.
             nldd-list forwards accessible-label only for type="list"; a

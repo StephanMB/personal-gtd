@@ -16,13 +16,11 @@ export function ListPage({ status }: { status: Status }) {
         <CaptureForm announceInbox={status !== 'inbox'} />
         <nldd-spacer size="16" />
         <nldd-list accessible-label={copy.lists[status]}>
-          {items.length === 0 ? (
-            <nldd-list-item>
-              <nldd-text-cell text={copy.empty[status]} />
-            </nldd-list-item>
-          ) : (
-            items.map((item) => <ItemRow key={item.id} item={item} />)
-          )}
+          {/* The list's own empty slot: a row would be announced as an item. */}
+          <nldd-inline-dialog slot="empty" text={copy.empty[status]} />
+          {items.map((item) => (
+            <ItemRow key={item.id} item={item} />
+          ))}
         </nldd-list>
       </nldd-simple-section>
     </nldd-page>

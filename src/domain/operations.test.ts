@@ -56,6 +56,14 @@ test('purgeTombstones drops only tombstones past retention', () => {
   assert.deepEqual(purgeTombstones(items, now).map((i) => i.id), ['live', 'recent']);
 });
 
+test('the inbox is ordered oldest first, the way GTD processes it', () => {
+  const items = [
+    makeItem({ id: 'new', createdAt: 200, updatedAt: 900 }),
+    makeItem({ id: 'old', createdAt: 100, updatedAt: 100 }),
+  ];
+  assert.deepEqual(itemsInStatus(items, 'inbox').map((i) => i.id), ['old', 'new']);
+});
+
 test('done items are ordered by completion time, others by last update', () => {
   const items = [
     makeItem({ id: 'd1', status: 'done', completedAt: 100, updatedAt: 500 }),
