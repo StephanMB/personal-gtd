@@ -4,6 +4,7 @@ import { copy } from '../copy.ts';
 import { LIST_KEYS } from '../keys.ts';
 import { navigate } from '../router.ts';
 import { BackupPanel } from './BackupPanel.tsx';
+import { RecoveredPanel } from './RecoveredPanel.tsx';
 
 const ICONS: Record<Status, string> = {
   inbox: 'inbox',
@@ -57,6 +58,7 @@ export function Sidebar({ current }: { current: Status }) {
         </nldd-skip-link>
         <nldd-spacer size="24" />
         <BackupPanel />
+        <RecoveredPanel />
       </nldd-simple-section>
     </nldd-page>
   );

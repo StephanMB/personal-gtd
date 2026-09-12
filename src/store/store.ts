@@ -2,7 +2,14 @@ import type { Item, Status } from '../domain/model.ts';
 import { capture, move, remove, purgeTombstones, type OpFailure, type OpResult } from '../domain/operations.ts';
 import { mergeItems } from '../domain/merge.ts';
 import { newId as defaultNewId } from '../domain/ids.ts';
-import { DATA_KEY, LEGACY_KEY, type LoadResult, type Repository } from '../persistence/repository.ts';
+import {
+  DATA_KEY,
+  LEGACY_KEY,
+  PRE_MIGRATION_PREFIX,
+  QUARANTINE_PREFIX,
+  type LoadResult,
+  type Repository,
+} from '../persistence/repository.ts';
 import { SCHEMA_VERSION } from '../persistence/schema.ts';
 import { diff, rebase, revert, type Change } from './undo.ts';
 
@@ -158,7 +165,7 @@ export function createStore({
           return true;
         }
         if (result.raw === stashed) return true; // already set aside, banner already shown
-        const key = stash('gtd:quarantine:', result.raw);
+        const key = stash(QUARANTINE_PREFIX, result.raw);
         set({
           problem: key
             ? { kind: 'corrupt', copyKey: key, leftInLegacy: false, raw: result.raw }
@@ -191,7 +198,7 @@ export function createStore({
       // Entries we cannot read appeared since boot: set them aside before the
       // next save replaces them.
       if (fresh.invalid > 0 && fresh.source === DATA_KEY) {
-        const key = stash('gtd:quarantine:', fresh.raw);
+        const key = stash(QUARANTINE_PREFIX, fresh.raw);
         if (key) set({ problem: { kind: 'unreadable-items', count: fresh.invalid, copyKey: key } });
         else if (state.problem === null) set({ problem: { kind: 'paused', cause: 'unreadable-items', raw: fresh.raw } });
         return;
@@ -287,7 +294,7 @@ export function createStore({
           const needsCopy = result.source === DATA_KEY && (result.invalid > 0 || result.from < SCHEMA_VERSION);
           let problem: Problem | null = null;
           if (needsCopy) {
-            const prefix = result.invalid > 0 ? 'gtd:quarantine:' : `gtd:pre-migration:v${result.from}:`;
+            const prefix = result.invalid > 0 ? QUARANTINE_PREFIX : `${PRE_MIGRATION_PREFIX}v${result.from}:`;
             const key = stash(prefix, result.raw);
             if (!key) {
               set({

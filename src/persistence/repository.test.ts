@@ -1,6 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createLocalStorageRepository, DATA_KEY, LEGACY_KEY, type KeyValueStore } from './repository.ts';
+import {
+  createLocalStorageRepository,
+  DATA_KEY,
+  LEGACY_KEY,
+  PRE_MIGRATION_PREFIX,
+  QUARANTINE_PREFIX,
+  type KeyValueStore,
+} from './repository.ts';
 import { SCHEMA_VERSION } from './schema.ts';
 
 class MemoryStore implements KeyValueStore {
@@ -12,6 +19,15 @@ class MemoryStore implements KeyValueStore {
   setItem(key: string, value: string) {
     if (this.failWrites) throw new DOMException('full', 'QuotaExceededError');
     this.data.set(key, value);
+  }
+  removeItem(key: string) {
+    this.data.delete(key);
+  }
+  key(index: number) {
+    return [...this.data.keys()][index] ?? null;
+  }
+  get length() {
+    return this.data.size;
   }
 }
 
@@ -77,4 +93,35 @@ test('stash keeps a copy under a prefixed key', () => {
   const key = repo.stash('gtd:quarantine:', 'raw');
   assert.ok(key?.startsWith('gtd:quarantine:'));
   assert.equal(store.getItem(key!), 'raw');
+});
+
+test('copies set aside can be listed, read, deleted and put back', () => {
+  const { store, repo } = setup();
+  const key = repo.stash(QUARANTINE_PREFIX, '{oops')!;
+  repo.stash(`${PRE_MIGRATION_PREFIX}v1:`, '[]');
+  store.data.set('unrelated', 'x');
+
+  const copies = repo.listStashed();
+  assert.deepEqual(copies.map((c) => c.reason).sort(), ['pre-migration', 'unreadable'], 'and nothing unrelated');
+  const quarantined = copies.find((c) => c.key === key)!;
+  assert.equal(quarantined.size, '{oops'.length);
+  assert.ok(quarantined.savedAt instanceof Date, 'the key carries when it was set aside');
+  assert.equal(repo.readStashed(key), '{oops');
+
+  repo.deleteStashed(key);
+  assert.equal(repo.readStashed(key), null);
+  assert.equal(repo.listStashed().length, 1);
+
+  assert.equal(repo.writeStashed(key, '{oops'), true, 'so deleting one can be undone');
+  assert.equal(repo.listStashed().length, 2);
+});
+
+test('reaching for copies never throws when storage is blocked', () => {
+  const throwing = createLocalStorageRepository(() => {
+    throw new DOMException('blocked', 'SecurityError');
+  }, null);
+  assert.deepEqual(throwing.listStashed(), []);
+  assert.equal(throwing.readStashed('k'), null);
+  assert.equal(throwing.writeStashed('k', 'v'), false);
+  throwing.deleteStashed('k');
 });

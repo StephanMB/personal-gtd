@@ -12,6 +12,15 @@ export class MemoryStore implements KeyValueStore {
     if (this.failWrites) throw new DOMException('full', 'QuotaExceededError');
     this.data.set(key, value);
   }
+  removeItem(key: string) {
+    this.data.delete(key);
+  }
+  key(index: number) {
+    return [...this.data.keys()][index] ?? null;
+  }
+  get length() {
+    return this.data.size;
+  }
 }
 
 /** A booted store over `storage`, with a deterministic clock and ids. */

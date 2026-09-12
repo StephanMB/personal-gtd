@@ -10,7 +10,10 @@ import { createStore } from '../store/store.ts';
  * subscribe(); components read signals, and Preact re-renders exactly the
  * components that read a signal that changed.
  */
-export const store = createStore({ repository: createLocalStorageRepository() });
+/** One repository, shared by the store and by the recovered-data surface. */
+export const repository = createLocalStorageRepository();
+
+export const store = createStore({ repository });
 store.boot();
 
 export const appState = signal(store.getState());

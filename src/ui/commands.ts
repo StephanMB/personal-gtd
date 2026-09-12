@@ -1,7 +1,8 @@
 import type { Item } from '../domain/model.ts';
 import { parseBackup, serializeBackup, backupFilename } from '../persistence/backup.ts';
+import type { StashedCopy } from '../persistence/repository.ts';
 import type { Command, DispatchResult } from '../store/store.ts';
-import { appState, store } from './app-state.ts';
+import { appState, repository, store } from './app-state.ts';
 import { copy } from './copy.ts';
 import { downloadText } from './download.ts';
 import { writeLastExport } from './last-export.ts';
@@ -52,6 +53,41 @@ export async function importFile(file: File): Promise<void> {
   notify(copy.backup.imported(result.counts), {
     variant: 'success',
     action: entryId === null ? undefined : { label: copy.undo, run: () => void run({ type: 'undo', entryId }) },
+  });
+}
+
+/**
+ * Data the app set aside because it could not read it. Until now these copies
+ * were written and never mentioned again, so the only way back was the
+ * browser console. Deleting one is undoable rather than confirmed: it is the
+ * design system's guideline, and this is the one copy of that data.
+ */
+export const listRecovered = (): StashedCopy[] => repository.listStashed();
+
+export function downloadRecovered(entry: StashedCopy): void {
+  const raw = repository.readStashed(entry.key);
+  if (raw === null) {
+    notify(copy.recovered.gone, { variant: 'warning' });
+    return;
+  }
+  downloadText(`gtd-recovered-${entry.savedAt?.toISOString().slice(0, 10) ?? 'data'}.json`, raw);
+}
+
+export function deleteRecovered(entry: StashedCopy, afterChange: () => void): void {
+  const raw = repository.readStashed(entry.key);
+  repository.deleteStashed(entry.key);
+  afterChange();
+  notify(copy.recovered.deleted, {
+    action:
+      raw === null
+        ? undefined
+        : {
+            label: copy.undo,
+            run: () => {
+              repository.writeStashed(entry.key, raw);
+              afterChange();
+            },
+          },
   });
 }
 

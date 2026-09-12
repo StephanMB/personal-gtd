@@ -67,3 +67,7 @@ body {
   font-size: 0.875em;
   color: var(--primitives-color-coolgray-600);
 }
+
+.recovered {
+  margin-block-start: var(--primitives-space-16);
+}

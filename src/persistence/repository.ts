@@ -5,6 +5,10 @@ export const DATA_KEY = 'gtd:data';
 /** Step 0/1 storage. Read once for migration, then left untouched as a rollback copy. */
 export const LEGACY_KEY = 'gtd:items';
 
+/** Prefixes under which data that could not be read is set aside. */
+export const QUARANTINE_PREFIX = 'gtd:quarantine:';
+export const PRE_MIGRATION_PREFIX = 'gtd:pre-migration:';
+
 export type LoadResult =
   | { kind: 'empty' }
   | {
@@ -23,6 +27,16 @@ export type LoadResult =
 /** `raw` is what was written: the caller can compare it with a later read. */
 export type WriteResult = { ok: true; raw: string } | { ok: false; error: unknown };
 
+/** One copy of data that could not be read, kept so nothing is ever lost. */
+export interface StashedCopy {
+  key: string;
+  /** When it was set aside, read from the key; null if the key carries no timestamp. */
+  savedAt: Date | null;
+  /** Characters, so the UI can say how much is in there. */
+  size: number;
+  reason: 'unreadable' | 'pre-migration';
+}
+
 /**
  * The seam between the app and where data lives. Today: localStorage.
  * Later: IndexedDB or a sync backend, behind the same interface
@@ -37,12 +51,21 @@ export interface Repository {
   stash(prefix: string, raw: string): string | null;
   /** Called when ANOTHER tab changes the data. Returns an unsubscribe function. */
   subscribe(callback: () => void): () => void;
+  /** Every copy set aside so far, newest first. Never throws. */
+  listStashed(): StashedCopy[];
+  readStashed(key: string): string | null;
+  /** Put a copy back under an exact key, so deleting one can be undone. */
+  writeStashed(key: string, raw: string): boolean;
+  deleteStashed(key: string): void;
 }
 
 /** The subset of the Web Storage API we use; lets tests pass an in-memory fake. */
 export interface KeyValueStore {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+  key(index: number): string | null;
+  readonly length: number;
 }
 
 function parse(raw: string, source: typeof DATA_KEY | typeof LEGACY_KEY): LoadResult {
@@ -63,10 +86,27 @@ function parse(raw: string, source: typeof DATA_KEY | typeof LEGACY_KEY): LoadRe
   }
 }
 
+/** The ISO timestamp a stash key ends with, e.g. gtd:quarantine:2026-09-12T08:16:57.961Z. */
+function savedAtFrom(key: string): Date | null {
+  const match = key.match(/(\d{4}-\d{2}-\d{2}T[\d:.]+Z)$/);
+  if (!match) return null;
+  const date = new Date(match[1]);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export function createLocalStorageRepository(
   getStore: () => KeyValueStore = () => window.localStorage,
   events: Pick<Window, 'addEventListener' | 'removeEventListener'> | null = typeof window === 'undefined' ? null : window,
 ): Repository {
+  function writeStashed(key: string, raw: string): boolean {
+    try {
+      getStore().setItem(key, raw);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   return {
     load() {
       let raw: string | null;
@@ -96,11 +136,46 @@ export function createLocalStorageRepository(
 
     stash(prefix, raw) {
       const key = `${prefix}${new Date().toISOString()}`;
+      return writeStashed(key, raw) ? key : null;
+    },
+
+    writeStashed,
+
+    listStashed() {
+      const copies: StashedCopy[] = [];
       try {
-        getStore().setItem(key, raw);
-        return key;
+        const store = getStore();
+        for (let i = 0; i < store.length; i++) {
+          const key = store.key(i);
+          if (key === null) continue;
+          const unreadable = key.startsWith(QUARANTINE_PREFIX);
+          if (!unreadable && !key.startsWith(PRE_MIGRATION_PREFIX)) continue;
+          copies.push({
+            key,
+            savedAt: savedAtFrom(key),
+            size: store.getItem(key)?.length ?? 0,
+            reason: unreadable ? 'unreadable' : 'pre-migration',
+          });
+        }
+      } catch {
+        return [];
+      }
+      return copies.sort((a, b) => (b.savedAt?.getTime() ?? 0) - (a.savedAt?.getTime() ?? 0));
+    },
+
+    readStashed(key) {
+      try {
+        return getStore().getItem(key);
       } catch {
         return null;
+      }
+    },
+
+    deleteStashed(key) {
+      try {
+        getStore().removeItem(key);
+      } catch {
+        // The copy stays, which is the safe direction.
       }
     },
 

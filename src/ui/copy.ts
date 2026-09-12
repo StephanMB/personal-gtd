@@ -67,6 +67,21 @@ export const copy = {
     importFailed: (reason: string) => `Import failed: ${reason}`,
   },
 
+  recovered: {
+    heading: 'Recovered data',
+    /** Just the moment: the row and the button labels put it in a sentence. */
+    savedAt: (date: Date | null) =>
+      date === null ? 'at an unknown time' : `on ${date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}`,
+    rowTitle: (when: string) => `Set aside ${when}`,
+    detail: (size: number, reason: 'unreadable' | 'pre-migration') =>
+      `${reason === 'unreadable' ? 'Data that could not be read' : 'Copy from before an upgrade'} (${Math.max(1, Math.round(size / 1024))} kB)`,
+    download: 'Download',
+    downloadLabel: (when: string) => `Download the copy set aside ${when}`,
+    deleteLabel: (when: string) => `Delete the copy set aside ${when}`,
+    deleted: 'Recovered copy deleted.',
+    gone: 'That copy is no longer in this browser.',
+  },
+
   problem(p: Problem): { text: string; supporting?: string } {
     switch (p.kind) {
       case 'unreadable-items':

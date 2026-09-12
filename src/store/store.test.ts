@@ -153,6 +153,10 @@ test('boot: unavailable storage is reported', () => {
       save: () => ({ ok: false, error: new Error('blocked') }),
       stash: () => null,
       subscribe: () => () => {},
+      listStashed: () => [],
+      readStashed: () => null,
+      writeStashed: () => false,
+      deleteStashed: () => {},
     },
   });
   assert.deepEqual(store.getState().problem, { kind: 'unavailable' });
@@ -205,6 +209,10 @@ test('a bug inside a command is reported and answered, not left as a rejection',
       save: () => ({ ok: true, raw: '' }),
       stash: () => null,
       subscribe: () => () => {},
+      listStashed: () => [],
+      readStashed: () => null,
+      writeStashed: () => false,
+      deleteStashed: () => {},
     },
     onError: (message) => messages.push(message),
   });
