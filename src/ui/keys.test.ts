@@ -21,8 +21,22 @@ test('undo works with Ctrl and with Cmd, but not with Shift (that is redo)', () 
   assert.equal(matchShortcut(key('c', { ctrlKey: true }), false), null, 'Ctrl+C stays copy');
 });
 
+test('p starts clarifying, and decision keys only work inside the flow', () => {
+  assert.deepEqual(matchShortcut(key('p'), false), { type: 'clarify' });
+  for (const k of ['n', 'w', 's', 'd', 't', 'e']) {
+    assert.equal(matchShortcut(key(k), false), null, `${k} does nothing outside the flow`);
+  }
+  assert.deepEqual(matchShortcut(key('n'), false, 'clarify'), { type: 'decide', decision: 'next' });
+  assert.deepEqual(matchShortcut(key('t'), false, 'clarify'), { type: 'decide', decision: 'trash' });
+  assert.deepEqual(matchShortcut(key('d'), false, 'clarify'), { type: 'decide', decision: 'done' });
+  assert.deepEqual(matchShortcut(key('e'), false, 'clarify'), { type: 'edit' });
+  assert.deepEqual(matchShortcut(key('Escape'), false, 'clarify'), { type: 'leave' });
+  assert.deepEqual(matchShortcut(key('2'), false, 'clarify'), { type: 'go', status: 'next' }, 'a way out stays');
+});
+
 test('nothing fires while typing', () => {
   for (const k of [key('c'), key('1'), key('z', { ctrlKey: true })]) assert.equal(matchShortcut(k, true), null);
+  for (const k of [key('n'), key('t'), key('e')]) assert.equal(matchShortcut(k, true, 'clarify'), null);
   assert.ok(isTypingTarget({ tagName: 'INPUT' }));
   assert.ok(isTypingTarget({ tagName: 'DIV', isContentEditable: true }));
   assert.ok(!isTypingTarget({ tagName: 'BUTTON' }));

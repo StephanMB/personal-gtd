@@ -10,6 +10,12 @@ test('every list has a path that parses back to it', () => {
   }
 });
 
+test('the clarify flow has a path of its own', () => {
+  const route = { view: 'clarify' as const };
+  assert.equal(pathFor(route), '/clarify');
+  assert.deepEqual(parseRoute('/clarify'), route);
+});
+
 test('root and trailing slashes go home or to the list; anything else is unknown', () => {
   assert.deepEqual(parseRoute('/'), HOME);
   assert.deepEqual(parseRoute('/next/'), { view: 'list', status: 'next' });

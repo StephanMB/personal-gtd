@@ -14,7 +14,7 @@ const ICONS: Record<Status, string> = {
   done: 'check-mark-circle',
 };
 
-export function Sidebar({ current }: { current: Status }) {
+export function Sidebar({ current }: { current: Status | null }) {
   const byStatus = lists.value;
   return (
     <nldd-page sticky-header>

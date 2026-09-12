@@ -8,6 +8,7 @@ import '@nldd/design-system/app-view';
 import '@nldd/design-system/badge';
 import '@nldd/design-system/banner';
 import '@nldd/design-system/button';
+import '@nldd/design-system/button-bar';
 import '@nldd/design-system/button-group';
 import '@nldd/design-system/cell';
 import '@nldd/design-system/icon-button';

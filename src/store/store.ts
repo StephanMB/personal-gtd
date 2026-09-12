@@ -1,5 +1,14 @@
 import type { Item, Status } from '../domain/model.ts';
-import { capture, move, remove, purgeTombstones, type OpFailure, type OpResult } from '../domain/operations.ts';
+import {
+  capture,
+  complete,
+  move,
+  remove,
+  rename,
+  purgeTombstones,
+  type OpFailure,
+  type OpResult,
+} from '../domain/operations.ts';
 import { mergeItems } from '../domain/merge.ts';
 import { newId as defaultNewId } from '../domain/ids.ts';
 import {
@@ -34,6 +43,10 @@ export type Command =
   | { type: 'capture'; input: string }
   | { type: 'move'; id: string; to: Status }
   | { type: 'remove'; id: string }
+  /** Clarifying rewrites a capture into the next physical action. */
+  | { type: 'rename'; id: string; title: string }
+  /** The two-minute rule: done from wherever it was. */
+  | { type: 'complete'; id: string }
   | { type: 'import'; items: Item[] }
   /** Undo the latest change, or a specific one (the toast's Undo button). */
   | { type: 'undo'; entryId?: number };
@@ -242,6 +255,10 @@ export function createStore({
         return move(items, command.id, command.to, t);
       case 'remove':
         return remove(items, command.id, t);
+      case 'rename':
+        return rename(items, command.id, command.title, t);
+      case 'complete':
+        return complete(items, command.id, t);
     }
   }
 

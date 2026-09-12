@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { capture, move, remove, restore, purgeTombstones, TOMBSTONE_RETENTION_MS } from './operations.ts';
+import { capture, complete, move, remove, rename, restore, purgeTombstones, TOMBSTONE_RETENTION_MS } from './operations.ts';
 import { itemsInStatus, liveItems } from './queries.ts';
 import type { Item } from './model.ts';
 import { makeItem } from './test-helpers.ts';
@@ -70,4 +70,30 @@ test('done items are ordered by completion time, others by last update', () => {
     makeItem({ id: 'd2', status: 'done', completedAt: 200, updatedAt: 200 }),
   ];
   assert.deepEqual(itemsInStatus(items, 'done').map((i) => i.id), ['d2', 'd1']);
+});
+
+test('rename rewrites a captured note into an action, and refuses an empty title', () => {
+  const items = [makeItem({ id: 'a', title: "Mom's birthday" })];
+  const renamed = rename(items, 'a', '  Call the bakery about a cake  ', 50);
+  assert.ok(renamed.ok);
+  assert.equal(renamed.ok && renamed.items[0].title, 'Call the bakery about a cake', 'trimmed');
+  assert.equal(renamed.ok && renamed.items[0].updatedAt, 50);
+  assert.deepEqual(rename(items, 'a', '   ', 50), { ok: false, reason: 'empty-input' });
+  assert.deepEqual(rename(items, 'zzz', 'x', 50), { ok: false, reason: 'not-found' });
+  assert.equal(rename(items, 'a', "Mom's birthday", 50).ok, true, 'renaming to the same title is a no-op');
+});
+
+test('complete is the two-minute rule: done from the inbox, which the table refuses', () => {
+  const items = [makeItem({ id: 'a', status: 'inbox' })];
+  assert.deepEqual(move(items, 'a', 'done', 60), { ok: false, reason: 'not-allowed' }, 'not from a list button');
+
+  const done = complete(items, 'a', 60);
+  assert.ok(done.ok);
+  if (!done.ok) return;
+  assert.equal(done.items[0].status, 'done');
+  assert.equal(done.items[0].completedAt, 60, 'the completedAt invariant holds');
+  assert.equal(complete(done.items, 'a', 70).ok, true, 'completing something already done is a no-op');
+  const removed = remove(items, 'a', 60);
+  assert.ok(removed.ok);
+  if (removed.ok) assert.deepEqual(complete(removed.items, 'a', 70), { ok: false, reason: 'deleted' });
 });

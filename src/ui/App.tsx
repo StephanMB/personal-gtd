@@ -2,6 +2,7 @@ import { useEffect } from 'preact/hooks';
 import { copy } from './copy.ts';
 import { goHome, route } from './router.ts';
 import { HOME } from './routes.ts';
+import { ClarifyPage } from './components/ClarifyPage.tsx';
 import { ListPage } from './components/ListPage.tsx';
 import { Sidebar } from './components/Sidebar.tsx';
 
@@ -16,7 +17,8 @@ export function App() {
   useEffect(() => {
     if (!current) goHome();
   }, [current]);
-  const status = (current ?? HOME).status;
+  const view = current ?? HOME;
+  const status = view.view === 'list' ? view.status : null;
 
   return (
     <nldd-app-view>
@@ -25,7 +27,7 @@ export function App() {
           <Sidebar current={status} />
         </nldd-split-view-pane>
         <nldd-split-view-pane slot="main" has-content>
-          <ListPage status={status} />
+          {view.view === 'clarify' ? <ClarifyPage /> : <ListPage status={view.status} />}
         </nldd-split-view-pane>
       </nldd-navigation-split-view>
     </nldd-app-view>

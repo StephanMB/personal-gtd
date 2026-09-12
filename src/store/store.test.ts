@@ -262,3 +262,23 @@ test('a command notifies subscribers once: an unchanged read is not an update', 
   await store.dispatch({ type: 'capture', input: 'two' });
   assert.equal(calls, 1, 're-reading our own write must not re-render the lists');
 });
+
+test('clarifying: rename then complete, both undoable', async () => {
+  const storage = new MemoryStore();
+  const store = openTab(storage);
+  await store.dispatch({ type: 'capture', input: "Mom's birthday" });
+  const { id } = store.getState().items[0];
+
+  await store.dispatch({ type: 'rename', id, title: 'Call the bakery' });
+  assert.equal(store.getState().items[0].title, 'Call the bakery');
+  assert.deepEqual(await store.dispatch({ type: 'rename', id, title: '  ' }), { ok: false, reason: 'empty-input' });
+
+  await store.dispatch({ type: 'complete', id });
+  assert.equal(store.getState().items[0].status, 'done', 'straight from the inbox: the two-minute rule');
+  assert.equal(stored(storage).items[0].status, 'done');
+
+  await store.dispatch({ type: 'undo' });
+  assert.equal(store.getState().items[0].status, 'inbox');
+  await store.dispatch({ type: 'undo' });
+  assert.equal(store.getState().items[0].title, "Mom's birthday");
+});

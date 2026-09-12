@@ -27,6 +27,17 @@ export async function deleteItem(item: Item): Promise<void> {
   }
 }
 
+/** Clarifying rewrites a capture into the next physical action. */
+export async function renameItem(item: Item, title: string): Promise<boolean> {
+  const result = await run({ type: 'rename', id: item.id, title });
+  return result.ok;
+}
+
+/** The two-minute rule: you just did it, so it is done wherever it was. */
+export async function completeItem(item: Item): Promise<void> {
+  await run({ type: 'complete', id: item.id });
+}
+
 export async function undoLast(): Promise<void> {
   const result = await run({ type: 'undo' });
   if (result.ok) notify(copy.undone);

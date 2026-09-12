@@ -43,6 +43,35 @@ export function restore(items: Item[], id: string, now: number): OpResult {
   return { ok: true, items: replace(items, { ...rest, updatedAt: now }) };
 }
 
+/**
+ * Give an item a different title. Clarifying rewrites what you captured into
+ * the next physical action: "Mom's birthday" becomes "Call the bakery".
+ */
+export function rename(items: Item[], id: string, title: string, now: number): OpResult {
+  const trimmed = title.trim();
+  if (trimmed === '') return { ok: false, reason: 'empty-input' };
+  const item = items.find((i) => i.id === id);
+  if (!item) return { ok: false, reason: 'not-found' };
+  if (!isLive(item)) return { ok: false, reason: 'deleted' };
+  if (item.title === trimmed) return { ok: true, items };
+  return { ok: true, items: replace(items, { ...item, title: trimmed, updatedAt: now }) };
+}
+
+/**
+ * The two-minute rule: something you just did is done, whatever list it was on.
+ *
+ * TRANSITIONS deliberately refuses inbox -> done, because the buttons on a list
+ * must not let you tick off something you never clarified. Clarifying IS that
+ * step, so the flow has its own way there rather than weakening the table.
+ */
+export function complete(items: Item[], id: string, now: number): OpResult {
+  const item = items.find((i) => i.id === id);
+  if (!item) return { ok: false, reason: 'not-found' };
+  if (!isLive(item)) return { ok: false, reason: 'deleted' };
+  if (item.status === 'done') return { ok: true, items };
+  return { ok: true, items: replace(items, transition(item, 'done', now)) };
+}
+
 export const TOMBSTONE_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 
 /** Drop tombstones older than the retention period. */

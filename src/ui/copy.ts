@@ -1,5 +1,6 @@
 import type { Status } from '../domain/model.ts';
 import type { CommandFailure, Problem } from '../store/store.ts';
+import type { Decision } from './keys.ts';
 
 /**
  * Every string the app shows, in one place. The store and domain return
@@ -65,6 +66,26 @@ export const copy = {
     imported: (c: { added: number; updated: number; deleted: number }) =>
       `Imported: ${c.added} new, ${c.updated} updated, ${c.deleted} deleted.`,
     importFailed: (reason: string) => `Import failed: ${reason}`,
+  },
+
+  clarify: {
+    title: 'Clarify',
+    start: (count: number) => `Clarify ${count} item${count === 1 ? '' : 's'}`,
+    progress: (position: number, total: number) => `Item ${position} of ${total}`,
+    question: 'What is the very next physical action?',
+    decisions: {
+      next: 'Next action',
+      waiting: 'Waiting for',
+      someday: 'Someday',
+      done: 'Done',
+      trash: 'Trash',
+    } satisfies Record<Decision, string>,
+    twoMinuteRule: 'If it takes less than two minutes, do it now and press d. Anything can be undone with Ctrl+Z.',
+    edit: 'Edit the title',
+    save: 'Save',
+    leave: 'Leave (Esc)',
+    empty: 'Inbox zero. Nothing left to clarify.',
+    backToInbox: 'Back to Inbox',
   },
 
   recovered: {
