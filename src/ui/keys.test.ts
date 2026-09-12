@@ -10,7 +10,7 @@ test('single keys map to actions', () => {
   assert.deepEqual(matchShortcut(key('c'), false), { type: 'focus-capture' });
   assert.deepEqual(matchShortcut(key('1'), false), { type: 'go', status: 'inbox' });
   assert.deepEqual(matchShortcut(key('5'), false), { type: 'go', status: 'done' });
-  assert.equal(matchShortcut(key('6'), false), null);
+  assert.equal(matchShortcut(key('7'), false), null, 'and nothing beyond the views that exist');
   assert.equal(matchShortcut(key('C', { shiftKey: true }), false), null);
 });
 
@@ -30,6 +30,8 @@ test('p starts clarifying, and decision keys only work inside the flow', () => {
   assert.deepEqual(matchShortcut(key('t'), false, 'clarify'), { type: 'decide', decision: 'trash' });
   assert.deepEqual(matchShortcut(key('d'), false, 'clarify'), { type: 'decide', decision: 'done' });
   assert.deepEqual(matchShortcut(key('e'), false, 'clarify'), { type: 'edit' });
+  assert.deepEqual(matchShortcut(key('p'), false, 'clarify'), { type: 'decide', decision: 'project' });
+  assert.deepEqual(matchShortcut(key('6'), false), { type: 'go-projects' });
   assert.deepEqual(matchShortcut(key('Escape'), false, 'clarify'), { type: 'leave' });
   assert.deepEqual(matchShortcut(key('2'), false, 'clarify'), { type: 'go', status: 'next' }, 'a way out stays');
 });

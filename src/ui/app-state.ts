@@ -1,6 +1,6 @@
 import { computed, signal } from '@preact/signals';
 import { STATUSES, type Status } from '../domain/model.ts';
-import { itemsInStatus } from '../domain/queries.ts';
+import { activeProjects, itemsInStatus, stalledProjects } from '../domain/queries.ts';
 import { createLocalStorageRepository } from '../persistence/repository.ts';
 import { createStore } from '../store/store.ts';
 
@@ -30,4 +30,19 @@ export const lists = computed(() => {
 // Closing the tab with changes that exist only in memory asks first.
 window.addEventListener('beforeunload', (event) => {
   if (appState.value.unsaved) event.preventDefault();
+});
+
+/**
+ * Projects, and the one query that makes them worth having: which of them
+ * nothing is going to move. Recomputed only when the collections change.
+ */
+export const projectViews = computed(() => {
+  const { items, projects } = appState.value;
+  const stalled = stalledProjects(projects, items);
+  return {
+    active: activeProjects(projects),
+    stalled,
+    stalledIds: new Set(stalled.map((project) => project.id)),
+    byId: new Map(projects.map((project) => [project.id, project])),
+  };
 });

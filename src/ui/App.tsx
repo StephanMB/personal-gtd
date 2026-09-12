@@ -4,6 +4,8 @@ import { goHome, route } from './router.ts';
 import { HOME } from './routes.ts';
 import { ClarifyPage } from './components/ClarifyPage.tsx';
 import { ListPage } from './components/ListPage.tsx';
+import { ProjectPage } from './components/ProjectPage.tsx';
+import { ProjectsPage } from './components/ProjectsPage.tsx';
 import { Sidebar } from './components/Sidebar.tsx';
 
 /**
@@ -18,16 +20,25 @@ export function App() {
     if (!current) goHome();
   }, [current]);
   const view = current ?? HOME;
-  const status = view.view === 'list' ? view.status : null;
+  const selected =
+    view.view === 'list' ? view.status : view.view === 'projects' || view.view === 'project' ? 'projects' : null;
 
   return (
     <nldd-app-view>
       <nldd-navigation-split-view primary-sidebar-accessible-label={copy.navLabel}>
         <nldd-split-view-pane slot="primary-sidebar" has-content>
-          <Sidebar current={status} />
+          <Sidebar current={selected} />
         </nldd-split-view-pane>
         <nldd-split-view-pane slot="main" has-content>
-          {view.view === 'clarify' ? <ClarifyPage /> : <ListPage status={view.status} />}
+          {view.view === 'clarify' ? (
+            <ClarifyPage />
+          ) : view.view === 'projects' ? (
+            <ProjectsPage />
+          ) : view.view === 'project' ? (
+            <ProjectPage id={view.id} />
+          ) : (
+            <ListPage status={view.status} />
+          )}
         </nldd-split-view-pane>
       </nldd-navigation-split-view>
     </nldd-app-view>

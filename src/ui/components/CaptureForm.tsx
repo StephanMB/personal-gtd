@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'preact/hooks';
+import type { Status } from '../../domain/model.ts';
 import { requestPersistence, run } from '../commands.ts';
 import { copy } from '../copy.ts';
 import { notify } from '../notify.ts';
@@ -10,7 +11,19 @@ import { registerCaptureFocus } from '../shortcuts.ts';
  * button both submit it. The field is uncontrolled: we read `.value` on
  * submit, which avoids re-rendering on every keystroke.
  */
-export function CaptureForm({ announceInbox }: { announceInbox: boolean }) {
+export function CaptureForm({
+  announceInbox,
+  projectId,
+  status,
+  label = copy.capture.label,
+  placeholder = copy.capture.placeholder,
+}: {
+  announceInbox: boolean;
+  projectId?: string;
+  status?: Status;
+  label?: string;
+  placeholder?: string;
+}) {
   const field = useRef<HTMLElementTagNameMap['nldd-text-field']>(null);
 
   useEffect(() => {
@@ -23,7 +36,7 @@ export function CaptureForm({ announceInbox }: { announceInbox: boolean }) {
     const el = field.current;
     const value = el?.value.trim();
     if (!el || !value) return;
-    const result = await run({ type: 'capture', input: value });
+    const result = await run({ type: 'capture', input: value, projectId, status });
     if (!result.ok) return;
     el.value = '';
     if (announceInbox) notify(copy.capture.addedElsewhere, { variant: 'success' });
@@ -35,8 +48,8 @@ export function CaptureForm({ announceInbox }: { announceInbox: boolean }) {
       <nldd-text-field
         ref={field}
         name="capture"
-        accessible-label={copy.capture.label}
-        placeholder={copy.capture.placeholder}
+        accessible-label={label}
+        placeholder={placeholder}
         autocomplete="off"
         enter-key="done"
       />

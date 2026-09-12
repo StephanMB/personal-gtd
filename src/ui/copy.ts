@@ -79,6 +79,7 @@ export const copy = {
       someday: 'Someday',
       done: 'Done',
       trash: 'Trash',
+      project: 'Make a project',
     } satisfies Record<Decision, string>,
     twoMinuteRule: 'If it takes less than two minutes, do it now and press d. Anything can be undone with Ctrl+Z.',
     edit: 'Edit the title',
@@ -86,6 +87,26 @@ export const copy = {
     leave: 'Leave (Esc)',
     empty: 'Inbox zero. Nothing left to clarify.',
     backToInbox: 'Back to Inbox',
+  },
+
+  projects: {
+    title: 'Projects',
+    /** The query a plain list can never answer, which is why projects exist. */
+    stalled: 'No next action',
+    stalledCount: (count: number) => `${count} project${count === 1 ? '' : 's'} with no next action`,
+    actionCount: (count: number) =>
+      count === 0 ? 'No actions yet' : `${count} action${count === 1 ? '' : 's'}`,
+    empty: 'No projects yet. In the inbox, press p on something that needs more than one action.',
+    promoted: (title: string) => `"${title}" is a project now. What is its first next action?`,
+    addAction: 'Add the next action',
+    addActionPlaceholder: 'The very next physical action…',
+    gone: 'That project is no longer here.',
+    back: 'All projects',
+    markDone: 'Project done',
+    drop: 'Drop it',
+    reopen: 'Reopen',
+    statusDone: 'Done',
+    statusDropped: 'Dropped',
   },
 
   recovered: {

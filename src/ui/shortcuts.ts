@@ -38,6 +38,9 @@ export function installShortcuts(): void {
       case 'go':
         navigate({ view: 'list', status: action.status });
         break;
+      case 'go-projects':
+        navigate({ view: 'projects' });
+        break;
       case 'undo':
         void undoLast();
         break;

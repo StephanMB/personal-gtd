@@ -306,3 +306,38 @@ test('projects load, survive a save, and import alongside items', async () => {
     'importing projects is undoable too, and undoing a creation leaves a tombstone',
   );
 });
+
+test('promoting a capture changes both collections, and undo puts both back', async () => {
+  const storage = new MemoryStore();
+  const store = openTab(storage);
+  await store.dispatch({ type: 'capture', input: "Mom's birthday" });
+  const { id } = store.getState().items[0];
+
+  const promoted = await store.dispatch({ type: 'promote', id });
+  assert.ok(promoted.ok);
+  assert.deepEqual(live(store.getState().items), [], 'the item became the project');
+  assert.equal(live(store.getState().projects).length, 1);
+  const projectId = store.getState().projects[0].id;
+
+  // The first action of the project, captured straight into it.
+  await store.dispatch({ type: 'capture', input: 'Call the bakery', projectId });
+  assert.equal(live(store.getState().items)[0].projectId, projectId);
+  assert.equal(stored(storage).items.at(-1).projectId, projectId);
+
+  await store.dispatch({ type: 'setProjectStatus', id: projectId, status: 'done' });
+  assert.equal(store.getState().projects[0].completedAt !== undefined, true);
+
+  await store.dispatch({ type: 'undo' });
+  assert.equal(store.getState().projects[0].status, 'active', 'project changes undo like anything else');
+});
+
+test('undoing a promote restores the item and tombstones the project, together', async () => {
+  const store = openTab(new MemoryStore());
+  await store.dispatch({ type: 'capture', input: 'Paint the kitchen' });
+  const { id } = store.getState().items[0];
+  await store.dispatch({ type: 'promote', id });
+
+  await store.dispatch({ type: 'undo' });
+  assert.deepEqual(live(store.getState().items).map((i) => i.title), ['Paint the kitchen']);
+  assert.deepEqual(live(store.getState().projects), [], 'both halves of one command come back together');
+});

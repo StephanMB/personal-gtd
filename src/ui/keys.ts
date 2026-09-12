@@ -23,12 +23,13 @@ import { STATUSES, type Status } from '../domain/model.ts';
  */
 export type Scope = 'global' | 'clarify';
 
-export type Decision = 'next' | 'waiting' | 'someday' | 'done' | 'trash';
+export type Decision = 'next' | 'waiting' | 'someday' | 'done' | 'trash' | 'project';
 
 export type ShortcutAction =
   | { type: 'focus-capture' }
   | { type: 'clarify' }
   | { type: 'go'; status: Status }
+  | { type: 'go-projects' }
   | { type: 'undo' }
   | { type: 'decide'; decision: Decision }
   | { type: 'edit' }
@@ -55,6 +56,9 @@ export const LIST_KEYS: Record<Status, string> = {
   done: '5',
 };
 
+/** The projects view sits after the five lists. */
+export const PROJECTS_KEY = '6';
+
 /** One key per decision, live only inside the clarify flow. */
 export const DECISION_KEYS: Record<string, Decision> = {
   n: 'next',
@@ -62,6 +66,8 @@ export const DECISION_KEYS: Record<string, Decision> = {
   s: 'someday',
   d: 'done',
   t: 'trash',
+  // Everywhere else p starts the flow, which means nothing while in it.
+  p: 'project',
 };
 
 export function matchShortcut(e: KeyPress, typing: boolean, scope: Scope = 'global'): ShortcutAction | null {
@@ -79,6 +85,7 @@ export function matchShortcut(e: KeyPress, typing: boolean, scope: Scope = 'glob
 
   if (e.key === 'c') return { type: 'focus-capture' };
   if (e.key === 'p') return { type: 'clarify' };
+  if (e.key === PROJECTS_KEY) return { type: 'go-projects' };
   const status = STATUSES.find((s) => LIST_KEYS[s] === e.key);
   return status ? { type: 'go', status } : null;
 }

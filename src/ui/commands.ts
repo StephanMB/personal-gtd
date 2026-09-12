@@ -1,4 +1,4 @@
-import type { Item } from '../domain/model.ts';
+import type { Item, ProjectStatus } from '../domain/model.ts';
 import { parseBackup, serializeBackup, backupFilename } from '../persistence/backup.ts';
 import type { StashedCopy } from '../persistence/repository.ts';
 import type { Command, DispatchResult } from '../store/store.ts';
@@ -36,6 +36,17 @@ export async function renameItem(item: Item, title: string): Promise<boolean> {
 /** The two-minute rule: you just did it, so it is done wherever it was. */
 export async function completeItem(item: Item): Promise<void> {
   await run({ type: 'complete', id: item.id });
+}
+
+/** Some captures are outcomes, not actions. The item becomes the project. */
+export async function promoteItem(item: Item): Promise<boolean> {
+  const result = await run({ type: 'promote', id: item.id });
+  if (result.ok) notify(copy.projects.promoted(item.title), { variant: 'success' });
+  return result.ok;
+}
+
+export async function setProjectStatus(id: string, status: ProjectStatus): Promise<void> {
+  await run({ type: 'setProjectStatus', id, status });
 }
 
 export async function undoLast(): Promise<void> {

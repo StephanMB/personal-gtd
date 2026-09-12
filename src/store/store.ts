@@ -1,13 +1,18 @@
-import type { Item, Project, Status } from '../domain/model.ts';
+import type { Item, Project, ProjectStatus, Status } from '../domain/model.ts';
 import {
   capture,
   complete,
   move,
+  promote,
   remove,
   rename,
+  renameProject,
+  setProjectStatus,
   purgeTombstones,
+  type DocOpResult,
   type OpFailure,
   type OpResult,
+  type ProjectOpResult,
 } from '../domain/operations.ts';
 import { mergeRecords } from '../domain/merge.ts';
 import { newId as defaultNewId } from '../domain/ids.ts';
@@ -40,13 +45,17 @@ import { diff, rebaseChanges, revert, type Change } from './undo.ts';
 // ---------------------------------------------------------------------------
 
 export type Command =
-  | { type: 'capture'; input: string }
+  | { type: 'capture'; input: string; projectId?: string; status?: Status }
   | { type: 'move'; id: string; to: Status }
   | { type: 'remove'; id: string }
   /** Clarifying rewrites a capture into the next physical action. */
   | { type: 'rename'; id: string; title: string }
   /** The two-minute rule: done from wherever it was. */
   | { type: 'complete'; id: string }
+  /** Make the project this capture always was; the item becomes it. */
+  | { type: 'promote'; id: string }
+  | { type: 'renameProject'; id: string; title: string }
+  | { type: 'setProjectStatus'; id: string; status: ProjectStatus }
   | { type: 'import'; items: Item[]; projects: Project[] }
   /** Undo the latest change, or a specific one (the toast's Undo button). */
   | { type: 'undo'; entryId?: number };
@@ -252,19 +261,37 @@ export function createStore({
     }
   }
 
-  function apply(command: Exclude<Command, { type: 'undo' } | { type: 'import' }>, items: Item[]): OpResult {
+  /** An operation on one collection leaves the other as it was. */
+  const withItems = (result: OpResult, projects: Project[]): DocOpResult =>
+    result.ok ? { ok: true, items: result.items, projects } : result;
+  const withProjects = (result: ProjectOpResult, items: Item[]): DocOpResult =>
+    result.ok ? { ok: true, items, projects: result.projects } : result;
+
+  function apply(command: Exclude<Command, { type: 'undo' } | { type: 'import' }>, before: DocContents): DocOpResult {
     const t = now();
+    const { items, projects } = before;
     switch (command.type) {
       case 'capture':
-        return capture(items, command.input, newId(), t);
+        return withItems(
+          capture(items, command.input, newId(), t, { projectId: command.projectId, status: command.status }),
+          projects,
+        );
       case 'move':
-        return move(items, command.id, command.to, t);
+        return withItems(move(items, command.id, command.to, t), projects);
       case 'remove':
-        return remove(items, command.id, t);
+        return withItems(remove(items, command.id, t), projects);
       case 'rename':
-        return rename(items, command.id, command.title, t);
+        return withItems(rename(items, command.id, command.title, t), projects);
       case 'complete':
-        return complete(items, command.id, t);
+        return withItems(complete(items, command.id, t), projects);
+      // The one command that changes both collections, which is why undo
+      // spans them.
+      case 'promote':
+        return promote(items, projects, command.id, newId(), t);
+      case 'renameProject':
+        return withProjects(renameProject(projects, command.id, command.title, t), items);
+      case 'setProjectStatus':
+        return withProjects(setProjectStatus(projects, command.id, command.status, t), items);
     }
   }
 
@@ -311,12 +338,12 @@ export function createStore({
         deleted: items.deleted + projects.deleted,
       };
     } else {
-      const result = apply(command, before.items);
+      const result = apply(command, before);
       if (!result.ok) {
         // restore() is the only source of 'not-deleted' and nothing dispatches it.
         return result as { ok: false; reason: CommandFailure };
       }
-      after = { items: result.items, projects: before.projects };
+      after = { items: result.items, projects: result.projects };
     }
 
     const changed = {

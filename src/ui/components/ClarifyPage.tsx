@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { lists } from '../app-state.ts';
-import { completeItem, deleteItem, renameItem, run } from '../commands.ts';
+import { completeItem, deleteItem, promoteItem, renameItem, run } from '../commands.ts';
 import { copy } from '../copy.ts';
 import type { Decision } from '../keys.ts';
 import { navigate } from '../router.ts';
@@ -21,6 +21,7 @@ const DECISIONS: { decision: Decision; key: string }[] = [
   { decision: 'someday', key: 's' },
   { decision: 'done', key: 'd' },
   { decision: 'trash', key: 't' },
+  { decision: 'project', key: 'p' },
 ];
 
 export function ClarifyPage() {
@@ -35,6 +36,7 @@ export function ClarifyPage() {
     setEditing(false);
     if (decision === 'trash') await deleteItem(item);
     else if (decision === 'done') await completeItem(item);
+    else if (decision === 'project') await promoteItem(item);
     else await run({ type: 'move', id: item.id, to: decision });
   }
 

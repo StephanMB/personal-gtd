@@ -1,4 +1,4 @@
-import { isLive, type Item, type Status, type StoredRecord } from './model.ts';
+import { isLive, type Item, type Project, type Status, type StoredRecord } from './model.ts';
 
 /** Everything that is not a tombstone, in any collection. */
 export function live<T extends StoredRecord>(records: readonly T[]): T[] {
@@ -17,4 +17,33 @@ export function itemsInStatus(items: Item[], status: Status): Item[] {
   if (status === 'inbox') return live.sort((a, b) => a.createdAt - b.createdAt);
   const key = (item: Item) => (status === 'done' ? (item.completedAt ?? item.updatedAt) : item.updatedAt);
   return live.sort((a, b) => key(b) - key(a));
+}
+
+/** Projects still being worked on, oldest first: the order you started them. */
+export function activeProjects(projects: readonly Project[]): Project[] {
+  return live(projects)
+    .filter((project) => project.status === 'active')
+    .sort((a, b) => a.createdAt - b.createdAt);
+}
+
+/** Every action belonging to a project, newest first; done ones last. */
+export function actionsInProject(items: readonly Item[], projectId: string): Item[] {
+  return live(items)
+    .filter((item) => item.projectId === projectId)
+    .sort((a, b) => Number(a.status === 'done') - Number(b.status === 'done') || b.updatedAt - a.updatedAt);
+}
+
+/**
+ * Active projects that nothing is going to move: no next action and nothing
+ * waiting on anyone. This is the query a plain list can never answer, and the
+ * reason projects exist at all. Waiting counts as moving: the ball is with
+ * someone else, which is not the same as having stopped.
+ */
+export function stalledProjects(projects: readonly Project[], items: readonly Item[]): Project[] {
+  const moving = new Set(
+    live(items)
+      .filter((item) => item.projectId !== undefined && (item.status === 'next' || item.status === 'waiting'))
+      .map((item) => item.projectId),
+  );
+  return activeProjects(projects).filter((project) => !moving.has(project.id));
 }

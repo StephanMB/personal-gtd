@@ -1,7 +1,7 @@
 import { STATUSES, type Status } from '../../domain/model.ts';
-import { lists } from '../app-state.ts';
+import { lists, projectViews } from '../app-state.ts';
 import { copy } from '../copy.ts';
-import { LIST_KEYS } from '../keys.ts';
+import { LIST_KEYS, PROJECTS_KEY } from '../keys.ts';
 import { navigate } from '../router.ts';
 import { BackupPanel } from './BackupPanel.tsx';
 import { RecoveredPanel } from './RecoveredPanel.tsx';
@@ -14,8 +14,9 @@ const ICONS: Record<Status, string> = {
   done: 'check-mark-circle',
 };
 
-export function Sidebar({ current }: { current: Status | null }) {
+export function Sidebar({ current }: { current: Status | 'projects' | null }) {
   const byStatus = lists.value;
+  const { active, stalled } = projectViews.value;
   return (
     <nldd-page sticky-header>
       {/* A visual title, not a heading: nldd-top-title-bar renders an h1 and
@@ -54,6 +55,34 @@ export function Sidebar({ current }: { current: Status | null }) {
                 </nldd-list-item>
               );
             })}
+            {/* One row however many projects there are. The badge turns red
+                with the count of projects nothing is moving, which is the
+                thing you want to be told rather than have to go and ask. */}
+            <nldd-list-item
+              button
+              selected={current === 'projects' || undefined}
+              onClick={() => navigate({ view: 'projects' })}
+            >
+              <nldd-icon-cell size="20" icon="folder" />
+              <nldd-spacer-cell size="8" />
+              <nldd-text-cell
+                text={copy.projects.title}
+                supporting-text={stalled.length > 0 ? copy.projects.stalledCount(stalled.length) : undefined}
+              />
+              {(stalled.length > 0 || active.length > 0) && (
+                <nldd-cell>
+                  <nldd-badge
+                    size="sm"
+                    color={stalled.length > 0 ? 'critical' : 'neutral'}
+                    number={stalled.length > 0 ? stalled.length : active.length}
+                  />
+                </nldd-cell>
+              )}
+              <nldd-spacer-cell size="8" />
+              <nldd-cell>
+                <nldd-keyboard-shortcut size="sm" variant="simple" keys={PROJECTS_KEY} />
+              </nldd-cell>
+            </nldd-list-item>
           </nldd-list>
         </nldd-skip-link>
         <nldd-spacer size="24" />

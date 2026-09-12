@@ -16,6 +16,14 @@ test('the clarify flow has a path of its own', () => {
   assert.deepEqual(parseRoute('/clarify'), route);
 });
 
+test('projects have a list, and each project a page', () => {
+  assert.deepEqual(parseRoute(pathFor({ view: 'projects' })), { view: 'projects' });
+  const one = { view: 'project' as const, id: 'p1' };
+  assert.equal(pathFor(one), '/projects/p1');
+  assert.deepEqual(parseRoute('/projects/p1'), one);
+  assert.equal(parseRoute('/projects/p1/extra'), null);
+});
+
 test('root and trailing slashes go home or to the list; anything else is unknown', () => {
   assert.deepEqual(parseRoute('/'), HOME);
   assert.deepEqual(parseRoute('/next/'), { view: 'list', status: 'next' });
