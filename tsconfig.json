@@ -1,12 +1,25 @@
 {
-  "extends": "astro/tsconfigs/strict",
+  // Own strict config now that Astro's base config is gone.
   "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node", "vite/client"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
     // Imports carry explicit .ts extensions so Node can run tests without a bundler.
     "allowImportingTsExtensions": true,
-    "noEmit": true,
     // Forbid syntax Node's type stripping can't erase (enums, namespaces, parameter properties).
     "erasableSyntaxOnly": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true
-  }
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": ["src", "e2e", "vite.config.ts", "playwright.config.ts"]
 }

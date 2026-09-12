@@ -1,0 +1,43 @@
+import { STATUSES, type Status } from '../domain/model.ts';
+
+/**
+ * Keyboard shortcuts as a pure function from a key press to an action, so
+ * the rules are tested without a browser. `shortcuts.ts` wires it to window.
+ *
+ *   c           focus the capture field
+ *   1 … 5       go to Inbox, Next, Waiting, Someday, Done
+ *   Ctrl/⌘ + Z  undo the last change
+ *
+ * Single keys never fire while typing. Undo doesn't either: inside a text
+ * field, Ctrl+Z belongs to the field's own text undo.
+ */
+export type ShortcutAction = { type: 'focus-capture' } | { type: 'go'; status: Status } | { type: 'undo' };
+
+export interface KeyPress {
+  key: string;
+  ctrlKey: boolean;
+  metaKey: boolean;
+  altKey: boolean;
+  shiftKey: boolean;
+}
+
+export const LIST_KEYS: Record<Status, string> = Object.fromEntries(
+  STATUSES.map((status, i) => [status, String(i + 1)]),
+) as Record<Status, string>;
+
+export function matchShortcut(e: KeyPress, typing: boolean): ShortcutAction | null {
+  if (typing || e.altKey) return null;
+  const mod = e.ctrlKey || e.metaKey;
+  if (mod && !e.shiftKey && e.key.toLowerCase() === 'z') return { type: 'undo' };
+  if (mod || e.shiftKey) return null;
+  if (e.key === 'c') return { type: 'focus-capture' };
+  const status = STATUSES.find((s) => LIST_KEYS[s] === e.key);
+  return status ? { type: 'go', status } : null;
+}
+
+/** Whether the element that really has focus (looked up through shadow roots) takes text. */
+export function isTypingTarget(el: { tagName?: string; isContentEditable?: boolean } | null | undefined): boolean {
+  if (!el?.tagName) return false;
+  const tag = el.tagName.toLowerCase();
+  return tag === 'input' || tag === 'textarea' || tag === 'select' || el.isContentEditable === true;
+}

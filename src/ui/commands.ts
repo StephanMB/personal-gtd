@@ -1,0 +1,72 @@
+import type { Item } from '../domain/model.ts';
+import { parseBackup, serializeBackup, backupFilename } from '../persistence/backup.ts';
+import type { Command, DispatchResult } from '../store/store.ts';
+import { appState, store } from './app-state.ts';
+import { copy } from './copy.ts';
+import { downloadText } from './download.ts';
+import { writeLastExport } from './last-export.ts';
+import { notify } from './notify.ts';
+
+/**
+ * What the UI's buttons and shortcuts call. Each dispatches a store command
+ * and turns a failure into a notification. Components never touch the store
+ * directly, so "what happens on click" is readable in one file.
+ */
+export async function run(command: Command): Promise<DispatchResult> {
+  const result = await store.dispatch(command);
+  if (!result.ok) notify(copy.failure[result.reason], { variant: 'warning' });
+  return result;
+}
+
+export async function deleteItem(item: Item): Promise<void> {
+  const result = await run({ type: 'remove', id: item.id });
+  if (result.ok && result.entryId !== null) {
+    const entryId = result.entryId;
+    notify(copy.deleted(item.title), { action: { label: copy.undo, run: () => void run({ type: 'undo', entryId }) } });
+  }
+}
+
+export async function undoLast(): Promise<void> {
+  const result = await run({ type: 'undo' });
+  if (result.ok) notify(copy.undone);
+}
+
+export function exportData(): void {
+  downloadText(backupFilename(), serializeBackup([...appState.value.items]));
+  writeLastExport(Date.now());
+}
+
+/**
+ * No confirmation dialog: import is one undoable step, and the notification
+ * offers Undo. NLDD's guideline, "undo over confirm", fits exactly.
+ */
+export async function importFile(file: File): Promise<void> {
+  const parsed = parseBackup(await file.text());
+  if (!parsed.ok) {
+    notify(copy.backup.importFailed(parsed.error), { variant: 'critical' });
+    return;
+  }
+  const result = await run({ type: 'import', items: parsed.items });
+  if (!result.ok || !result.counts) return;
+  const entryId = result.entryId;
+  notify(copy.backup.imported(result.counts), {
+    variant: 'success',
+    action: entryId === null ? undefined : { label: copy.undo, run: () => void run({ type: 'undo', entryId }) },
+  });
+}
+
+export const dismissProblem = () => store.dismissProblem();
+export const resumeSaving = () => store.resumeSaving();
+
+let persistenceRequested = false;
+
+/** Ask the browser not to evict our storage under disk pressure. Once per session, best effort. */
+export async function requestPersistence(): Promise<void> {
+  if (persistenceRequested) return;
+  persistenceRequested = true;
+  try {
+    if (navigator.storage?.persist && !(await navigator.storage.persisted())) await navigator.storage.persist();
+  } catch {
+    // Unsupported or refused: export remains the real safeguard.
+  }
+}

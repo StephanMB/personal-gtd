@@ -1,0 +1,69 @@
+/*
+ * App styling on top of NLDD. Everything else comes from the components.
+ *
+ * 0. Page height. nldd-app-view is height:100% of its parent, and in nested
+ *    scroll mode (sidebar and list side by side) its panes scroll within that
+ *    height. Without a definite height on the chain the shell collapses to
+ *    nothing, so the page gives it one. NLDD's stylesheet styles no page
+ *    element itself, so the body margin is reset here too.
+ */
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+/*
+ * 1. Accent colour. NLDD's accent points at lintblauw, the Rijksoverheid
+ *    colour. This is a personal tool, not a government service, so it points
+ *    at another palette from the same system. One palette name to change;
+ *    every accent-coloured component follows. Remove this block to go back.
+ */
+:root {
+  --primitives-color-accent-0: var(--primitives-color-violet-0);
+  --primitives-color-accent-25: var(--primitives-color-violet-25);
+  --primitives-color-accent-50: var(--primitives-color-violet-50);
+  --primitives-color-accent-75: var(--primitives-color-violet-75);
+  --primitives-color-accent-100: var(--primitives-color-violet-100);
+  --primitives-color-accent-150: var(--primitives-color-violet-150);
+  --primitives-color-accent-200: var(--primitives-color-violet-200);
+  --primitives-color-accent-250: var(--primitives-color-violet-250);
+  --primitives-color-accent-300: var(--primitives-color-violet-300);
+  --primitives-color-accent-350: var(--primitives-color-violet-350);
+  --primitives-color-accent-400: var(--primitives-color-violet-400);
+  --primitives-color-accent-450: var(--primitives-color-violet-450);
+  --primitives-color-accent-500: var(--primitives-color-violet-500);
+  --primitives-color-accent-550: var(--primitives-color-violet-550);
+  --primitives-color-accent-600: var(--primitives-color-violet-600);
+  --primitives-color-accent-650: var(--primitives-color-violet-650);
+  --primitives-color-accent-700: var(--primitives-color-violet-700);
+  --primitives-color-accent-750: var(--primitives-color-violet-750);
+  --primitives-color-accent-800: var(--primitives-color-violet-800);
+  --primitives-color-accent-850: var(--primitives-color-violet-850);
+  --primitives-color-accent-900: var(--primitives-color-violet-900);
+  --primitives-color-accent-925: var(--primitives-color-violet-925);
+  --primitives-color-accent-950: var(--primitives-color-violet-950);
+  --primitives-color-accent-975: var(--primitives-color-violet-975);
+  --primitives-color-accent-1000: var(--primitives-color-violet-1000);
+}
+
+/* 2. The few layouts that are not a component. Primitives only, no raw values. */
+.capture {
+  display: flex;
+  gap: var(--primitives-space-8);
+  align-items: start;
+}
+
+.capture nldd-text-field {
+  flex: 1;
+}
+
+.backup-info {
+  margin-block: var(--primitives-space-8) 0;
+  font-size: 0.875em;
+  color: var(--primitives-color-coolgray-600);
+}
