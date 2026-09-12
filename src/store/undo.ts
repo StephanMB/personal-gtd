@@ -70,22 +70,23 @@ export function revert<T extends StoredRecord>(
  * undo bumped its updatedAt. Point them at the restored version, which is the
  * same content, so undoing twice in a row works instead of reporting a
  * conflict with itself.
+ *
+ * Returns the same array when nothing was touched, so a caller can keep the
+ * entry it already had.
  */
-export function rebase<T extends StoredRecord, E extends { changes: Change<T>[] }>(
-  entries: readonly E[],
+export function rebaseChanges<T extends StoredRecord>(
+  changes: readonly Change<T>[],
   restored: readonly Restored<T>[],
-): E[] {
+): Change<T>[] {
   const byId = new Map(restored.map((r) => [r.item.id, r]));
-  return entries.map((entry) => {
-    let touched = false;
-    const changes = entry.changes.map((change) => {
-      const r = byId.get(change.after.id);
-      if (r && r.replacedUpdatedAt === change.after.updatedAt) {
-        touched = true;
-        return { ...change, after: r.item };
-      }
-      return change;
-    });
-    return touched ? { ...entry, changes } : entry;
+  let touched = false;
+  const rebased = changes.map((change) => {
+    const r = byId.get(change.after.id);
+    if (r && r.replacedUpdatedAt === change.after.updatedAt) {
+      touched = true;
+      return { ...change, after: r.item };
+    }
+    return change;
   });
+  return touched ? rebased : (changes as Change<T>[]);
 }

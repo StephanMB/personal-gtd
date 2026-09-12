@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { diff, rebase, revert } from './undo.ts';
+import { diff, rebaseChanges, revert } from './undo.ts';
 import type { Item } from '../domain/model.ts';
 import { makeItem } from '../domain/test-helpers.ts';
 
@@ -45,11 +45,11 @@ test('rebase lets an older entry be undone after a newer one', () => {
   const undo2 = revert([a2], e2.changes, 40);
   assert.ok(undo2.ok);
   if (!undo2.ok) return;
-  const [rebased] = rebase([e1], undo2.restored);
-  const undo1 = revert(undo2.items, rebased.changes, 50);
+  const rebased = rebaseChanges(e1.changes, undo2.restored);
+  const undo1 = revert(undo2.items, rebased, 50);
   assert.ok(undo1.ok, 'no false conflict');
   assert.equal(undo1.ok && undo1.items[0].status, 'inbox');
-  assert.equal(rebase([e1], []).at(0), e1, 'untouched entries keep their identity');
+  assert.equal(rebaseChanges(e1.changes, []), e1.changes, 'untouched changes keep their identity');
 });
 
 test('diff and revert work on any stored record', () => {

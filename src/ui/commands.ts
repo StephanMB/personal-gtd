@@ -44,7 +44,10 @@ export async function undoLast(): Promise<void> {
 }
 
 export function exportData(): void {
-  downloadText(backupFilename(), serializeBackup([...appState.value.items]));
+  downloadText(
+    backupFilename(),
+    serializeBackup({ items: [...appState.value.items], projects: [...appState.value.projects] }),
+  );
   writeLastExport(Date.now());
 }
 
@@ -58,7 +61,7 @@ export async function importFile(file: File): Promise<void> {
     notify(copy.backup.importFailed(parsed.error), { variant: 'critical' });
     return;
   }
-  const result = await run({ type: 'import', items: parsed.items });
+  const result = await run({ type: 'import', items: parsed.items, projects: parsed.projects });
   if (!result.ok || !result.counts) return;
   const entryId = result.entryId;
   notify(copy.backup.imported(result.counts), {

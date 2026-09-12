@@ -1,5 +1,5 @@
 import { createItem } from './capture.ts';
-import { isLive, type Item, type Status } from './model.ts';
+import { isLive, type Item, type Status, type StoredRecord } from './model.ts';
 import { canTransition, transition } from './transitions.ts';
 
 /**
@@ -74,7 +74,11 @@ export function complete(items: Item[], id: string, now: number): OpResult {
 
 export const TOMBSTONE_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 
-/** Drop tombstones older than the retention period. */
-export function purgeTombstones(items: Item[], now: number, retentionMs = TOMBSTONE_RETENTION_MS): Item[] {
-  return items.filter((item) => item.deletedAt === undefined || now - item.deletedAt < retentionMs);
+/** Drop tombstones older than the retention period, in any collection. */
+export function purgeTombstones<T extends StoredRecord>(
+  records: readonly T[],
+  now: number,
+  retentionMs = TOMBSTONE_RETENTION_MS,
+): T[] {
+  return records.filter((record) => record.deletedAt === undefined || now - record.deletedAt < retentionMs);
 }

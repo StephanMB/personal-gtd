@@ -1,4 +1,4 @@
-import type { Item, Status } from '../domain/model.ts';
+import type { Item, Project, Status } from '../domain/model.ts';
 import {
   capture,
   complete,
@@ -19,8 +19,8 @@ import {
   type LoadResult,
   type Repository,
 } from '../persistence/repository.ts';
-import { SCHEMA_VERSION } from '../persistence/schema.ts';
-import { diff, rebase, revert, type Change } from './undo.ts';
+import { SCHEMA_VERSION, type DocContents } from '../persistence/schema.ts';
+import { diff, rebaseChanges, revert, type Change } from './undo.ts';
 
 /**
  * The application store: the one place where state changes.
@@ -47,7 +47,7 @@ export type Command =
   | { type: 'rename'; id: string; title: string }
   /** The two-minute rule: done from wherever it was. */
   | { type: 'complete'; id: string }
-  | { type: 'import'; items: Item[] }
+  | { type: 'import'; items: Item[]; projects: Project[] }
   /** Undo the latest change, or a specific one (the toast's Undo button). */
   | { type: 'undo'; entryId?: number };
 
@@ -76,14 +76,20 @@ export type Problem =
   | { kind: 'unavailable' }
   | { kind: 'save-failed' };
 
+/**
+ * One undoable change, per collection. A single command can touch both, so
+ * undoing it puts both back or neither.
+ */
 export interface UndoEntry {
   id: number;
-  changes: Change<Item>[];
+  items: Change<Item>[];
+  projects: Change<Project>[];
 }
 
 export interface StoreState {
   /** All items, tombstones included. Views go through domain/queries. */
   readonly items: readonly Item[];
+  readonly projects: readonly Project[];
   readonly problem: Problem | null;
   /** Changes exist that are not in storage. The UI warns before closing. */
   readonly unsaved: boolean;
@@ -129,7 +135,7 @@ export function createStore({
   undoLimit = 50,
   onError = (message, error) => console.error(message, error),
 }: StoreOptions): Store {
-  let state: StoreState = { items: [], problem: null, unsaved: false, undoStack: [] };
+  let state: StoreState = { items: [], projects: [], problem: null, unsaved: false, undoStack: [] };
   const listeners = new Set<(state: StoreState) => void>();
   let queue: Promise<unknown> = Promise.resolve();
   let nextEntryId = 1;
@@ -221,28 +227,28 @@ export function createStore({
         // every component new objects and re-render the lists for nothing.
         if (fresh.raw === lastRaw) return;
         lastRaw = fresh.raw;
-        set({ items: fresh.items });
+        set({ items: fresh.items, projects: fresh.projects });
       }
-    } else if (fresh.kind === 'empty' && state.items.length > 0) {
+    } else if (fresh.kind === 'empty' && (state.items.length > 0 || state.projects.length > 0)) {
       lastRaw = null;
-      set({ items: [] });
+      set({ items: [], projects: [] });
     }
   }
 
-  /** Commit `items` (plus any other state) and write it, reporting failure as a Problem. */
-  function save(items: readonly Item[], patch: Partial<StoreState> = {}): void {
+  /** Commit a document (plus any other state) and write it, reporting failure as a Problem. */
+  function save(contents: DocContents, patch: Partial<StoreState> = {}): void {
     if (!canWrite()) {
-      set({ ...patch, items, unsaved: true });
+      set({ ...patch, ...contents, unsaved: true });
       return;
     }
-    const result = repo.save([...items]);
+    const result = repo.save(contents);
     if (result.ok) {
       lastRaw = result.raw;
       const problem = state.problem?.kind === 'save-failed' ? null : state.problem;
-      set({ ...patch, items, unsaved: false, problem });
+      set({ ...patch, ...contents, unsaved: false, problem });
     } else {
       onError('[gtd] save failed', result.error);
-      set({ ...patch, items, unsaved: true, problem: { kind: 'save-failed' } });
+      set({ ...patch, ...contents, unsaved: true, problem: { kind: 'save-failed' } });
     }
   }
 
@@ -262,38 +268,64 @@ export function createStore({
     }
   }
 
+  function undo(entryId: number | undefined, before: DocContents): DispatchResult {
+    const stack = state.undoStack;
+    const entry = entryId === undefined ? stack.at(-1) : stack.find((e) => e.id === entryId);
+    if (!entry) return { ok: false, reason: 'nothing-to-undo' };
+
+    const t = now();
+    const items = revert(before.items, entry.items, t);
+    const projects = revert(before.projects, entry.projects, t);
+    // All or nothing across collections: one command can have changed both.
+    if (!items.ok || !projects.ok) return { ok: false, reason: 'undo-conflict' };
+
+    const remaining = stack
+      .filter((e) => e !== entry)
+      .map((e) => {
+        const rebasedItems = rebaseChanges(e.items, items.restored);
+        const rebasedProjects = rebaseChanges(e.projects, projects.restored);
+        return rebasedItems === e.items && rebasedProjects === e.projects
+          ? e
+          : { ...e, items: rebasedItems, projects: rebasedProjects };
+      });
+
+    save({ items: items.items, projects: projects.items }, { undoStack: remaining });
+    return { ok: true, entryId: null };
+  }
+
   function run(command: Command): DispatchResult {
     refresh();
-    const before = [...state.items];
+    const before: DocContents = { items: [...state.items], projects: [...state.projects] };
 
-    if (command.type === 'undo') {
-      const stack = state.undoStack;
-      const entry = command.entryId === undefined ? stack.at(-1) : stack.find((e) => e.id === command.entryId);
-      if (!entry) return { ok: false, reason: 'nothing-to-undo' };
-      const reverted = revert(before, entry.changes, now());
-      if (!reverted.ok) return reverted;
-      save(reverted.items, { undoStack: rebase(stack.filter((e) => e !== entry), reverted.restored) });
-      return { ok: true, entryId: null };
-    }
+    if (command.type === 'undo') return undo(command.entryId, before);
 
-    let after: Item[];
+    let after: DocContents;
     let counts: { added: number; updated: number; deleted: number } | undefined;
     if (command.type === 'import') {
-      const merged = mergeRecords(before, command.items);
-      after = merged.items;
-      counts = { added: merged.added, updated: merged.updated, deleted: merged.deleted };
+      const items = mergeRecords(before.items, command.items);
+      const projects = mergeRecords(before.projects, command.projects);
+      after = { items: items.items, projects: projects.items };
+      counts = {
+        added: items.added + projects.added,
+        updated: items.updated + projects.updated,
+        deleted: items.deleted + projects.deleted,
+      };
     } else {
-      const result = apply(command, before);
+      const result = apply(command, before.items);
       if (!result.ok) {
         // restore() is the only source of 'not-deleted' and nothing dispatches it.
         return result as { ok: false; reason: CommandFailure };
       }
-      after = result.items;
+      after = { items: result.items, projects: before.projects };
     }
 
-    const changes = diff(before, after);
-    if (changes.length === 0) return { ok: true, entryId: null, counts };
-    const entry: UndoEntry = { id: nextEntryId++, changes };
+    const changed = {
+      items: diff(before.items, after.items),
+      projects: diff(before.projects, after.projects),
+    };
+    if (changed.items.length === 0 && changed.projects.length === 0) return { ok: true, entryId: null, counts };
+
+    const entry: UndoEntry = { id: nextEntryId++, ...changed };
     save(after, { undoStack: [...state.undoStack, entry].slice(-undoLimit) });
     return { ok: true, entryId: entry.id, counts };
   }
@@ -316,16 +348,23 @@ export function createStore({
             if (!key) {
               set({
                 items: result.items,
-                problem: { kind: 'paused', cause: result.invalid > 0 ? 'unreadable-items' : 'migration', raw: result.raw },
+                projects: result.projects,
+                problem: {
+                  kind: 'paused',
+                  cause: result.invalid > 0 ? 'unreadable-items' : 'migration',
+                  raw: result.raw,
+                },
               });
               break;
             }
             if (result.invalid > 0) problem = { kind: 'unreadable-items', count: result.invalid, copyKey: key };
           }
-          const purged = purgeTombstones(result.items, now());
+          const items = purgeTombstones(result.items, now());
+          const projects = purgeTombstones(result.projects, now());
           lastRaw = result.raw;
-          set({ items: purged, problem });
-          if (purged.length !== result.items.length || result.from < SCHEMA_VERSION || result.invalid > 0) save(purged);
+          set({ items, projects, problem });
+          const purged = items.length !== result.items.length || projects.length !== result.projects.length;
+          if (purged || result.from < SCHEMA_VERSION || result.invalid > 0) save({ items, projects });
           break;
         }
       }
@@ -369,7 +408,7 @@ export function createStore({
     resumeSaving() {
       if (state.problem?.kind !== 'paused') return;
       set({ problem: null });
-      save(state.items);
+      save({ items: [...state.items], projects: [...state.projects] });
     },
   };
 }

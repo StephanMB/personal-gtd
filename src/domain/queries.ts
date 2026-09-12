@@ -1,7 +1,8 @@
-import { isLive, type Item, type Status } from './model.ts';
+import { isLive, type Item, type Status, type StoredRecord } from './model.ts';
 
-export function liveItems(items: Item[]): Item[] {
-  return items.filter(isLive);
+/** Everything that is not a tombstone, in any collection. */
+export function live<T extends StoredRecord>(records: readonly T[]): T[] {
+  return records.filter(isLive);
 }
 
 /**

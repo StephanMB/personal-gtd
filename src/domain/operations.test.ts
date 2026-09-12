@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { capture, complete, move, remove, rename, restore, purgeTombstones, TOMBSTONE_RETENTION_MS } from './operations.ts';
-import { itemsInStatus, liveItems } from './queries.ts';
+import { itemsInStatus, live } from './queries.ts';
 import type { Item } from './model.ts';
 import { makeItem } from './test-helpers.ts';
 
@@ -36,7 +36,7 @@ test('remove makes a tombstone that queries hide; restore brings it back', () =>
   assert.equal(removed.items[0].deletedAt, 30);
   assert.equal(removed.items[0].updatedAt, 30, 'delete bumps updatedAt so merges see it');
   assert.deepEqual(itemsInStatus(removed.items, 'next'), []);
-  assert.deepEqual(liveItems(removed.items), []);
+  assert.deepEqual(live(removed.items), []);
   assert.deepEqual(move(removed.items, 'a', 'done', 31), { ok: false, reason: 'deleted' });
 
   const restored = restore(removed.items, 'a', 40);

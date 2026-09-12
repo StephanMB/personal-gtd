@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 2,
+  "items": [
+    { "id": "b1", "title": "Paint the kitchen ceiling", "status": "next", "createdAt": 1000, "updatedAt": 2000 },
+    { "id": "b2", "title": "Ring the insurer", "status": "inbox", "createdAt": 900, "updatedAt": 900 },
+    { "id": "b3", "title": "File the tax return", "status": "done", "createdAt": 500, "updatedAt": 1500, "completedAt": 1500 },
+    { "id": "b4", "title": "Thing I deleted", "status": "inbox", "createdAt": 100, "updatedAt": 1200, "deletedAt": 1200 }
+  ]
+}

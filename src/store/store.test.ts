@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DATA_KEY, LEGACY_KEY } from '../persistence/repository.ts';
-import { itemsInStatus, liveItems } from '../domain/queries.ts';
+import { itemsInStatus, live } from '../domain/queries.ts';
 import { MemoryStore, openTab } from './test-helpers.ts';
 
 const stored = (s: MemoryStore) => JSON.parse(s.getItem(DATA_KEY) ?? 'null');
@@ -22,7 +22,7 @@ test('capture, move and undo round trip through storage', async () => {
   assert.ok((await store.dispatch({ type: 'undo' })).ok);
   assert.equal(store.getState().items[0].status, 'inbox');
   assert.ok((await store.dispatch({ type: 'undo' })).ok, 'undoing twice in a row works');
-  assert.deepEqual(liveItems([...store.getState().items]), [], 'undoing the capture leaves a tombstone');
+  assert.deepEqual(live([...store.getState().items]), [], 'undoing the capture leaves a tombstone');
   assert.deepEqual(await store.dispatch({ type: 'undo' }), { ok: false, reason: 'nothing-to-undo' });
 });
 
@@ -68,7 +68,7 @@ test('undo by entry id reverts that change only (the toast Undo)', async () => {
   await store.dispatch({ type: 'capture', input: 'c' });
   assert.ok(removed.ok && removed.entryId !== null);
   await store.dispatch({ type: 'undo', entryId: removed.ok ? removed.entryId! : -1 });
-  assert.deepEqual(titles(liveItems([...store.getState().items])), ['a', 'b', 'c']);
+  assert.deepEqual(titles(live([...store.getState().items])), ['a', 'b', 'c']);
 });
 
 test('undo history is bounded', async () => {
@@ -142,7 +142,7 @@ test('boot: step-1 data is migrated and saved without a problem', () => {
   storage.data.set(LEGACY_KEY, v1);
   const store = openTab(storage);
   assert.equal(store.getState().problem, null);
-  assert.equal(stored(storage).schemaVersion, 2);
+  assert.equal(stored(storage).schemaVersion, 3);
   assert.equal(storage.getItem(LEGACY_KEY), v1);
 });
 
@@ -166,11 +166,11 @@ test('import merges, reports counts, and is undoable as one step', async () => {
   const store = openTab(new MemoryStore());
   await store.dispatch({ type: 'capture', input: 'mine' });
   const incoming = [{ id: 'x', title: 'imported', status: 'next' as const, createdAt: 1, updatedAt: 1 }];
-  const r = await store.dispatch({ type: 'import', items: incoming });
+  const r = await store.dispatch({ type: 'import', items: incoming, projects: [] });
   assert.deepEqual(r.ok && r.counts, { added: 1, updated: 0, deleted: 0 });
   await store.dispatch({ type: 'undo' });
-  assert.deepEqual(titles(liveItems([...store.getState().items])), ['mine']);
-  const again = await store.dispatch({ type: 'import', items: [] });
+  assert.deepEqual(titles(live([...store.getState().items])), ['mine']);
+  const again = await store.dispatch({ type: 'import', items: [], projects: [] });
   assert.deepEqual(again, { ok: true, entryId: null, counts: { added: 0, updated: 0, deleted: 0 } });
 });
 
@@ -281,4 +281,28 @@ test('clarifying: rename then complete, both undoable', async () => {
   assert.equal(store.getState().items[0].status, 'inbox');
   await store.dispatch({ type: 'undo' });
   assert.equal(store.getState().items[0].title, "Mom's birthday");
+});
+
+test('projects load, survive a save, and import alongside items', async () => {
+  const storage = new MemoryStore();
+  const project = { id: 'p1', title: 'Kitchen painted', status: 'active' as const, createdAt: 1, updatedAt: 1 };
+  storage.data.set(DATA_KEY, JSON.stringify({ schemaVersion: 3, items: [], projects: [project] }));
+
+  const store = openTab(storage);
+  assert.deepEqual(store.getState().projects, [project], 'a second collection loads');
+
+  await store.dispatch({ type: 'capture', input: 'Buy paint' });
+  assert.deepEqual(stored(storage).projects, [project], 'and an item command does not drop it');
+
+  const incoming = { id: 'p2', title: 'Taxes filed', status: 'active' as const, createdAt: 2, updatedAt: 2 };
+  const r = await store.dispatch({ type: 'import', items: [], projects: [incoming] });
+  assert.deepEqual(r.ok && r.counts, { added: 1, updated: 0, deleted: 0 });
+  assert.deepEqual(stored(storage).projects.map((p: { id: string }) => p.id), ['p1', 'p2']);
+
+  await store.dispatch({ type: 'undo' });
+  assert.deepEqual(
+    live(store.getState().projects).map((p) => p.id),
+    ['p1'],
+    'importing projects is undoable too, and undoing a creation leaves a tombstone',
+  );
 });

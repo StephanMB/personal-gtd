@@ -1,5 +1,5 @@
-import type { Item } from '../domain/model.ts';
-import { migrate, SCHEMA_VERSION, type StoredDoc } from './schema.ts';
+import type { Item, Project } from '../domain/model.ts';
+import { migrate, SCHEMA_VERSION, type DocContents, type StoredDoc } from './schema.ts';
 
 const FORMAT = 'personal-gtd-backup';
 
@@ -18,13 +18,18 @@ interface BackupFileV2 {
   data: StoredDoc;
 }
 
-/** Includes tombstones, so deletions carry over to wherever the file is imported. */
-export function serializeBackup(items: Item[], now = new Date()): string {
+/**
+ * Includes tombstones, so deletions carry over to wherever the file is
+ * imported. The payload is the whole stored document, so a new collection is
+ * exported and migrated without the backup format changing at all: that is
+ * what the envelope version is for, and why it is still 2 at schema 3.
+ */
+export function serializeBackup(contents: DocContents, now = new Date()): string {
   const file: BackupFileV2 = {
     format: FORMAT,
     version: 2,
     exportedAt: now.toISOString(),
-    data: { schemaVersion: SCHEMA_VERSION, items },
+    data: { schemaVersion: SCHEMA_VERSION, ...contents },
   };
   return JSON.stringify(file, null, 2);
 }
@@ -33,7 +38,9 @@ export function backupFilename(now = new Date()): string {
   return `gtd-backup-${now.toISOString().slice(0, 10)}.json`;
 }
 
-export type ParseBackupResult = { ok: true; items: Item[]; invalid: number } | { ok: false; error: string };
+export type ParseBackupResult =
+  | { ok: true; items: Item[]; projects: Project[]; invalid: number }
+  | { ok: false; error: string };
 
 /**
  * Accepts backup files v1 and v2, and bare arrays (a raw step-1 localStorage
@@ -64,7 +71,7 @@ export function parseBackup(text: string): ParseBackupResult {
   const result = migrate(payload);
   switch (result.kind) {
     case 'ok':
-      return { ok: true, items: result.doc.items, invalid: result.invalid };
+      return { ok: true, items: result.doc.items, projects: result.doc.projects, invalid: result.invalid };
     case 'newer':
       return { ok: false, error: `This backup was made by a newer version of the app (schema ${result.version}).` };
     case 'corrupt':

@@ -1,5 +1,5 @@
-import type { Item } from '../domain/model.ts';
-import { migrate, SCHEMA_VERSION, type StoredDoc } from './schema.ts';
+import type { Item, Project } from '../domain/model.ts';
+import { migrate, SCHEMA_VERSION, type DocContents, type StoredDoc } from './schema.ts';
 
 export const DATA_KEY = 'gtd:data';
 /** Step 0/1 storage. Read once for migration, then left untouched as a rollback copy. */
@@ -14,6 +14,7 @@ export type LoadResult =
   | {
       kind: 'ok';
       items: Item[];
+      projects: Project[];
       invalid: number;
       raw: string;
       /** Version the data was stored in; < SCHEMA_VERSION means it was migrated in memory. */
@@ -45,8 +46,8 @@ export interface StashedCopy {
 export interface Repository {
   /** Pure read: never writes, never throws. */
   load(): LoadResult;
-  /** Never throws. */
-  save(items: Item[]): WriteResult;
+  /** Writes the whole document. Never throws. */
+  save(contents: DocContents): WriteResult;
   /** Copy a raw value aside under `<prefix><timestamp>`. Returns the key, or null. */
   stash(prefix: string, raw: string): string | null;
   /** Called when ANOTHER tab changes the data. Returns an unsubscribe function. */
@@ -78,7 +79,15 @@ function parse(raw: string, source: typeof DATA_KEY | typeof LEGACY_KEY): LoadRe
   const result = migrate(data);
   switch (result.kind) {
     case 'ok':
-      return { kind: 'ok', items: result.doc.items, invalid: result.invalid, raw, from: result.from, source };
+      return {
+        kind: 'ok',
+        items: result.doc.items,
+        projects: result.doc.projects,
+        invalid: result.invalid,
+        raw,
+        from: result.from,
+        source,
+      };
     case 'newer':
       return { kind: 'newer', version: result.version };
     case 'corrupt':
@@ -123,8 +132,8 @@ export function createLocalStorageRepository(
       return { kind: 'empty' };
     },
 
-    save(items) {
-      const doc: StoredDoc = { schemaVersion: SCHEMA_VERSION, items };
+    save(contents) {
+      const doc: StoredDoc = { schemaVersion: SCHEMA_VERSION, ...contents };
       const raw = JSON.stringify(doc);
       try {
         getStore().setItem(DATA_KEY, raw);
