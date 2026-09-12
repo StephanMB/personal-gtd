@@ -46,6 +46,17 @@ domain ← persistence ← store ← ui
   upgrading, and let the import guard, the accent guard and Playwright catch
   the rest.
 
+## Explaining the app
+- The app assumes things about how it is used (inbox oldest first, a project
+  with no next action has stopped, export is the only real backup). Every such
+  assumption is a candidate for one sentence at the moment it applies, not a
+  line in a manual.
+- Rules for when a hint applies live in `src/ui/hints.ts` and are pure and
+  tested; the wording lives in `copy.ts` like every other string. Say WHY, not
+  just how: the how is already on screen.
+- One hint at a time, by priority. A hint retires when its control is used or
+  it is waved away, and the fact is stored in settings, so it never returns.
+
 ## Scope discipline
 - The step 4 document is a menu, not a queue. Query features (a view over data
   that already exists) are cheap; entity features (a new record, a migration

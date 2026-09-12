@@ -4,6 +4,7 @@ import { setProjectStatus } from '../commands.ts';
 import { copy } from '../copy.ts';
 import { navigate } from '../router.ts';
 import { CaptureForm } from './CaptureForm.tsx';
+import { Hint } from './Hint.tsx';
 import { ItemRow } from './ItemRow.tsx';
 
 /**
@@ -64,13 +65,15 @@ export function ProjectPage({ id }: { id: string }) {
         )}
 
         <nldd-spacer size="16" />
-        <CaptureForm
-          announceInbox={false}
-          projectId={id}
-          status="next"
-          label={copy.projects.addAction}
-          placeholder={copy.projects.addActionPlaceholder}
-        />
+        <Hint id="project-first-action" here={{ projectActions: actions.length }}>
+          <CaptureForm
+            announceInbox={false}
+            projectId={id}
+            status="next"
+            label={copy.projects.addAction}
+            placeholder={copy.projects.addActionPlaceholder}
+          />
+        </Hint>
 
         <nldd-spacer size="16" />
         <nldd-list accessible-label={project.title}>

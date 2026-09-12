@@ -91,3 +91,22 @@ test('migrating a v3 document twice changes nothing', () => {
   const second = migrate(first.kind === 'ok' ? first.doc : null);
   assert.deepEqual(second.kind === 'ok' && second.doc, first.kind === 'ok' && first.doc);
 });
+
+test('settings keep what this build does not know, and drop what it cannot read', () => {
+  const r = migrate({
+    schemaVersion: 4,
+    items: [],
+    projects: [],
+    settings: { lastExportAt: 5, lastReviewedAt: 'soon', dismissedHints: ['a', 7], somethingNewer: { on: true } },
+  });
+  assert.ok(r.kind === 'ok');
+  if (r.kind !== 'ok') return;
+  assert.equal(r.doc.settings.lastExportAt, 5);
+  assert.equal(r.doc.settings.lastReviewedAt, undefined, 'unreadable: dropped');
+  assert.deepEqual(r.doc.settings.dismissedHints, ['a']);
+  assert.deepEqual(
+    (r.doc.settings as Record<string, unknown>).somethingNewer,
+    { on: true },
+    'a setting from a newer build survives a round trip through this one',
+  );
+});

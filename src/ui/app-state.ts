@@ -1,4 +1,5 @@
 import { computed, signal } from '@preact/signals';
+import type { HintContext, HintId } from './hints.ts';
 import { STATUSES, type Status } from '../domain/model.ts';
 import { activeProjects, itemsInStatus, stalledProjects } from '../domain/queries.ts';
 import { createLocalStorageRepository } from '../persistence/repository.ts';
@@ -46,3 +47,18 @@ export const projectViews = computed(() => {
     byId: new Map(projects.map((project) => [project.id, project])),
   };
 });
+
+/**
+ * What the screen a hint sits on knows that the data does not, and which
+ * hints that screen actually shows. Both are global so the arbitration picks
+ * one explanation across the whole app rather than one per surface.
+ */
+export const hintHere = signal<HintContext['here']>(undefined);
+export const hintsOnScreen = signal<readonly HintId[]>([]);
+
+export const hintContext = computed<HintContext>(() => ({
+  items: appState.value.items,
+  projects: appState.value.projects,
+  settings: appState.value.settings,
+  here: hintHere.value,
+}));

@@ -4,6 +4,7 @@ import type { StashedCopy } from '../persistence/repository.ts';
 import type { Command, DispatchResult } from '../store/store.ts';
 import { appState, repository, store } from './app-state.ts';
 import { copy } from './copy.ts';
+import type { HintId } from './hints.ts';
 import { downloadText } from './download.ts';
 import { notify } from './notify.ts';
 
@@ -123,6 +124,13 @@ export function deleteRecovered(entry: StashedCopy, afterChange: () => void): vo
             },
           },
   });
+}
+
+/** An explanation that has been used or waved away does not come back. */
+export async function dismissHint(id: HintId): Promise<void> {
+  const dismissed = appState.value.settings.dismissedHints ?? [];
+  if (dismissed.includes(id)) return;
+  await run({ type: 'settings', patch: { dismissedHints: [...dismissed, id] } });
 }
 
 export const dismissProblem = () => store.dismissProblem();

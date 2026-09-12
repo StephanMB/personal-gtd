@@ -2,6 +2,7 @@ import { useRef } from 'preact/hooks';
 import { appState } from '../app-state.ts';
 import { exportData, importFile } from '../commands.ts';
 import { copy } from '../copy.ts';
+import { Hint } from './Hint.tsx';
 
 export function BackupPanel() {
   const fileInput = useRef<HTMLInputElement>(null);
@@ -13,12 +14,9 @@ export function BackupPanel() {
   return (
     <div class="backup">
       <nldd-button-group size="sm">
-        <nldd-button
-          size="sm"
-          start-icon="export"
-          text={copy.backup.export}
-          onClick={exportData}
-        />
+        <Hint id="export-backup">
+          <nldd-button size="sm" start-icon="export" text={copy.backup.export} onClick={exportData} />
+        </Hint>
         <nldd-button size="sm" start-icon="import" text={copy.backup.import} onClick={() => fileInput.current?.click()} />
       </nldd-button-group>
       <input

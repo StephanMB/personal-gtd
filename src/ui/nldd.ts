@@ -14,6 +14,7 @@ import '@nldd/design-system/cell';
 import '@nldd/design-system/icon-button';
 import '@nldd/design-system/icon-cell';
 import '@nldd/design-system/inline-dialog';
+import '@nldd/design-system/just-in-time-education';
 import '@nldd/design-system/keyboard-shortcut';
 import '@nldd/design-system/list';
 import '@nldd/design-system/list-item';

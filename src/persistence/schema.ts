@@ -8,6 +8,8 @@ import { isItem, isProject, type Item, type Project } from '../domain/model.ts';
 export interface Settings {
   lastReviewedAt?: number;
   lastExportAt?: number;
+  /** Explanations the user has waved away; they never come back. */
+  dismissedHints?: string[];
 }
 
 /**
@@ -73,13 +75,26 @@ const MIGRATIONS: Record<number, (doc: unknown) => unknown> = {
 
 const timestamp = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
 
-/** Settings are read leniently: an unreadable one is simply not set. */
+/**
+ * Settings are read leniently: a setting this build cannot make sense of is
+ * dropped, but one it has never heard of is kept.
+ *
+ * That is what makes this section genuinely additive, unlike a new top-level
+ * section: a newer build can add a setting and an older build will hand it
+ * back untouched instead of silently deleting it on the next save.
+ */
 function readSettings(value: unknown): Settings {
   if (typeof value !== 'object' || value === null) return {};
   const raw = value as Record<string, unknown>;
-  const settings: Settings = {};
+  const settings: Settings = { ...(raw as Settings) };
+  delete settings.lastReviewedAt;
+  delete settings.lastExportAt;
+  delete settings.dismissedHints;
   if (timestamp(raw.lastReviewedAt)) settings.lastReviewedAt = raw.lastReviewedAt;
   if (timestamp(raw.lastExportAt)) settings.lastExportAt = raw.lastExportAt;
+  if (Array.isArray(raw.dismissedHints)) {
+    settings.dismissedHints = raw.dismissedHints.filter((id): id is string => typeof id === 'string');
+  }
   return settings;
 }
 

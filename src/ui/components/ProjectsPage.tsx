@@ -2,6 +2,7 @@ import { appState, projectViews } from '../app-state.ts';
 import { actionsInProject } from '../../domain/queries.ts';
 import { copy } from '../copy.ts';
 import { navigate } from '../router.ts';
+import { Hint } from './Hint.tsx';
 
 /**
  * Every project you are working on, the ones that have stopped moving first.
@@ -22,7 +23,8 @@ export function ProjectsPage() {
     <nldd-page sticky-header>
       <nldd-top-title-bar slot="header" text={copy.projects.title} />
       <nldd-simple-section>
-        <nldd-list accessible-label={copy.projects.title}>
+        <Hint id="stalled-projects">
+          <nldd-list accessible-label={copy.projects.title}>
           <nldd-inline-dialog slot="empty" text={copy.projects.empty} />
           {ordered.map((project) => {
             const open = actionsInProject(items, project.id).filter((item) => item.status !== 'done').length;
@@ -41,8 +43,9 @@ export function ProjectsPage() {
                 )}
               </nldd-list-item>
             );
-          })}
-        </nldd-list>
+            })}
+          </nldd-list>
+        </Hint>
       </nldd-simple-section>
     </nldd-page>
   );

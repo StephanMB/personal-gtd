@@ -19,6 +19,16 @@ A context is a trailing `@word`. Email addresses are left alone.
 | Ctrl/⌘+Z | Undo |
 | ↑ ↓ Tab | Move between rows / through a row's buttons |
 
+## Why it does what it does
+
+The app explains itself where it applies: the first time a situation comes up
+(a few things piled up, a project with nothing moving it, never having
+exported), one sentence appears on the control it is about, with the reasoning
+behind it. Use the control or wave it away and it does not come back; what you
+have seen is stored with your data, so it travels with a backup.
+
+There is no tutorial, and nothing to read before you start.
+
 ## Your data
 
 - Stored in this browser under `gtd:data` (schema version 2), as a document

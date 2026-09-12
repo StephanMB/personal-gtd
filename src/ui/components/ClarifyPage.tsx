@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { lists } from '../app-state.ts';
-import { completeItem, deleteItem, promoteItem, renameItem, run } from '../commands.ts';
+import { completeItem, deleteItem, dismissHint, promoteItem, renameItem, run } from '../commands.ts';
 import { copy } from '../copy.ts';
 import type { Decision } from '../keys.ts';
 import { navigate } from '../router.ts';
 import { HOME } from '../routes.ts';
 import { registerClarifyKeys } from '../shortcuts.ts';
+import { Hint } from './Hint.tsx';
 
 /**
  * Clarifying: one item, one decision, one keystroke.
@@ -34,6 +35,8 @@ export function ClarifyPage() {
   async function decide(decision: Decision): Promise<void> {
     if (!item) return;
     setEditing(false);
+    // Making a decision is the interaction the explanation is about.
+    void dismissHint('clarify-keys');
     if (decision === 'trash') await deleteItem(item);
     else if (decision === 'done') await completeItem(item);
     else if (decision === 'project') await promoteItem(item);
@@ -126,16 +129,18 @@ export function ClarifyPage() {
         <nldd-spacer size="16" />
         <p class="clarify-question">{copy.clarify.question}</p>
 
-        <nldd-button-bar size="sm">
-          {DECISIONS.map(({ decision, key }) => (
-            <nldd-button
-              key={decision}
-              text={`${copy.clarify.decisions[decision]} (${key})`}
-              accessible-label={copy.clarify.decisions[decision]}
-              onClick={() => void decide(decision)}
-            />
-          ))}
-        </nldd-button-bar>
+        <Hint id="clarify-keys" dismissable={false}>
+          <nldd-button-bar size="sm">
+            {DECISIONS.map(({ decision, key }) => (
+              <nldd-button
+                key={decision}
+                text={`${copy.clarify.decisions[decision]} (${key})`}
+                accessible-label={copy.clarify.decisions[decision]}
+                onClick={() => void decide(decision)}
+              />
+            ))}
+          </nldd-button-bar>
+        </Hint>
 
         <p class="clarify-hint">{copy.clarify.twoMinuteRule}</p>
         <nldd-spacer size="16" />

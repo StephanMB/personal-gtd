@@ -3,6 +3,7 @@ import { appState, lists } from '../app-state.ts';
 import { copy } from '../copy.ts';
 import { navigate } from '../router.ts';
 import { CaptureForm } from './CaptureForm.tsx';
+import { Hint } from './Hint.tsx';
 import { ItemRow } from './ItemRow.tsx';
 import { ProblemBanner } from './ProblemBanner.tsx';
 
@@ -14,15 +15,19 @@ export function ListPage({ status }: { status: Status }) {
       <nldd-top-title-bar slot="header" text={copy.lists[status]} />
       <nldd-simple-section>
         {problem && <ProblemBanner problem={problem} />}
-        <CaptureForm announceInbox={status !== 'inbox'} />
+        <Hint id="capture-context">
+          <CaptureForm announceInbox={status !== 'inbox'} />
+        </Hint>
         {status === 'inbox' && items.length > 0 && (
           <>
             <nldd-spacer size="16" />
-            <nldd-button
-              variant="secondary"
-              text={copy.clarify.start(items.length)}
-              onClick={() => navigate({ view: 'clarify' })}
-            />
+            <Hint id="clarify-inbox">
+              <nldd-button
+                variant="secondary"
+                text={copy.clarify.start(items.length)}
+                onClick={() => navigate({ view: 'clarify' })}
+              />
+            </Hint>
           </>
         )}
         <nldd-spacer size="16" />

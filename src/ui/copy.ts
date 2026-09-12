@@ -1,6 +1,7 @@
 import type { Status } from '../domain/model.ts';
 import type { CommandFailure, Problem } from '../store/store.ts';
 import type { Decision } from './keys.ts';
+import type { HintId } from './hints.ts';
 
 /**
  * Every string the app shows, in one place. The store and domain return
@@ -135,6 +136,48 @@ export const copy = {
     sinceReview: (days: number) =>
       days === 0 ? 'Reviewed today' : `Reviewed ${days} day${days === 1 ? '' : 's'} ago`,
   },
+
+  /**
+   * One sentence at the moment it applies, plus the reason behind it. These
+   * say WHY the app behaves as it does, because the how is visible already.
+   */
+  hints: {
+    'capture-context': {
+      text: 'Tag where it happens',
+      supporting:
+        'A trailing @word becomes a context: "Buy milk @errands". Email addresses are left alone, so jan@minbzk.nl stays intact.',
+    },
+    'clarify-inbox': {
+      text: 'Decide once per item',
+      supporting:
+        'Clarifying walks the inbox oldest first, one decision at a time, because re-reading the whole list is how an inbox stops being trusted.',
+    },
+    'clarify-keys': {
+      text: 'One key per decision',
+      supporting:
+        'n, w, s for the lists, d if you just did it, t for the bin, e to rewrite it. Nothing here is final: Ctrl+Z takes the last one back.',
+    },
+    'project-first-action': {
+      text: 'What is the very next action?',
+      supporting:
+        'The project title is the outcome you want. What goes here is the next physical thing you would actually do, and it is filed as a next action straight away.',
+    },
+    'stalled-projects': {
+      text: 'This one has stopped',
+      supporting:
+        'A project with no next action and nobody to chase will not move by itself. That is what the red count means, and it is the one thing a flat task list can never tell you.',
+    },
+    'export-backup': {
+      text: 'Export is the real backup',
+      supporting:
+        'Everything lives in this browser. Clearing site data wipes it, and Safari deletes storage for sites unused for a week. Importing merges, so an export is never destructive to come back to.',
+    },
+    'review-cadence': {
+      text: 'Once a week is the point',
+      supporting:
+        'The pass is what lets you trust the lists between passes. Finishing records the date, and the sidebar starts nudging after seven days.',
+    },
+  } satisfies Record<HintId, { text: string; supporting: string }>,
 
   recovered: {
     heading: 'Recovered data',

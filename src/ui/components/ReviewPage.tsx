@@ -5,6 +5,7 @@ import { exportData, finishReview } from '../commands.ts';
 import { copy } from '../copy.ts';
 import { navigate } from '../router.ts';
 import { HOME } from '../routes.ts';
+import { Hint } from './Hint.tsx';
 import { ItemRow } from './ItemRow.tsx';
 
 /**
@@ -143,14 +144,16 @@ export function ReviewPage() {
           <nldd-button size="sm" text={copy.review.exportNow} start-icon="export" onClick={exportData} />
         </Step>
 
-        <nldd-button
-          variant="accent-filled"
-          text={copy.review.finish}
-          onClick={() => {
-            void finishReview();
-            navigate(HOME);
-          }}
-        />
+        <Hint id="review-cadence">
+          <nldd-button
+            variant="accent-filled"
+            text={copy.review.finish}
+            onClick={() => {
+              void finishReview();
+              navigate(HOME);
+            }}
+          />
+        </Hint>
         <nldd-spacer size="16" />
         <p class="review-intro">
           {settings.lastReviewedAt === undefined

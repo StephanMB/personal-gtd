@@ -37,7 +37,9 @@ test('every nldd-* tag used in src/ui is imported in nldd.ts, and nothing more',
   for (const file of uiSources(UI)) {
     const text = readFileSync(file, 'utf8');
     for (const [, tag] of text.matchAll(/<nldd-([a-z0-9-]+)/g)) used.add(tag);
-    for (const [, tag] of text.matchAll(/['"]nldd-([a-z0-9-]+)['"]/g)) used.add(tag); // createElement('nldd-…')
+    // createElement('nldd-…') only: a bare 'nldd-…' string can be an event
+    // name (nldd-close), which is not a tag and has nothing to import.
+    for (const [, tag] of text.matchAll(/createElement\(['"]nldd-([a-z0-9-]+)['"]/g)) used.add(tag);
   }
   const unknown = [...used].filter((tag) => !entryFor(tag));
   assert.deepEqual(unknown, [], 'tags that no design-system entry defines (typo?)');
