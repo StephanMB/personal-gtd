@@ -10,6 +10,9 @@ export interface Settings {
   lastExportAt?: number;
   /** Explanations the user has waved away; they never come back. */
   dismissedHints?: string[];
+  /** Follow the operating system, or force one. */
+  theme?: 'system' | 'light' | 'dark';
+  language?: 'en' | 'nl';
 }
 
 /**
@@ -90,11 +93,15 @@ function readSettings(value: unknown): Settings {
   delete settings.lastReviewedAt;
   delete settings.lastExportAt;
   delete settings.dismissedHints;
+  delete settings.theme;
+  delete settings.language;
   if (timestamp(raw.lastReviewedAt)) settings.lastReviewedAt = raw.lastReviewedAt;
   if (timestamp(raw.lastExportAt)) settings.lastExportAt = raw.lastExportAt;
   if (Array.isArray(raw.dismissedHints)) {
     settings.dismissedHints = raw.dismissedHints.filter((id): id is string => typeof id === 'string');
   }
+  if (raw.theme === 'system' || raw.theme === 'light' || raw.theme === 'dark') settings.theme = raw.theme;
+  if (raw.language === 'en' || raw.language === 'nl') settings.language = raw.language;
   return settings;
 }
 

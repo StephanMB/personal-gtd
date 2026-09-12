@@ -1,4 +1,6 @@
-import { computed, signal } from '@preact/signals';
+import { computed, effect, signal } from '@preact/signals';
+import { applyAppearance } from './appearance.ts';
+import { language } from './copy.ts';
 import type { HintContext, HintId } from './hints.ts';
 import { STATUSES, type Status } from '../domain/model.ts';
 import { activeProjects, itemsInStatus, stalledProjects } from '../domain/queries.ts';
@@ -26,6 +28,17 @@ store.subscribe((state) => {
 export const lists = computed(() => {
   const items = [...appState.value.items];
   return Object.fromEntries(STATUSES.map((status) => [status, itemsInStatus(items, status)])) as Record<Status, ReturnType<typeof itemsInStatus>>;
+});
+
+/**
+ * Settings decide what the app looks like and which language it speaks, so
+ * both follow the document: they survive a reload, travel with a backup, and
+ * are the same in every tab.
+ */
+effect(() => {
+  const { theme = 'system', language: chosen = 'en' } = appState.value.settings;
+  language.value = chosen;
+  applyAppearance(theme, chosen);
 });
 
 // Closing the tab with changes that exist only in memory asks first.

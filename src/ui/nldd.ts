@@ -21,6 +21,7 @@ import '@nldd/design-system/list-item';
 import '@nldd/design-system/navigation-split-view';
 import '@nldd/design-system/notification';
 import '@nldd/design-system/page';
+import '@nldd/design-system/segmented-control';
 import '@nldd/design-system/simple-section';
 import '@nldd/design-system/skip-link';
 import '@nldd/design-system/spacer';

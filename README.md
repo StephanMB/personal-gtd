@@ -53,6 +53,13 @@ A written no is easier to hold to than an unwritten one. This app will not grow:
 New features earn their place by being missed three separate times. Capture the
 annoyance in the app as an item; most of them die there, which is the point.
 
+## Appearance and language
+
+The sidebar carries two choices: appearance (system, light or dark) and
+language (English or Nederlands). Both are stored with your data rather than
+in this browser, so they survive a reload, are the same in every tab, and come
+back with a backup. Appearance defaults to following the operating system.
+
 ## Stack
 
 Vite + Preact (with signals) + [NLDD design system](https://github.com/MinBZK/storybook)

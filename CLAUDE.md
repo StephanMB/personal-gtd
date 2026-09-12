@@ -12,8 +12,11 @@ domain ← persistence ← store ← ui
 - `ui/` renders state and dispatches commands. It never decides policy.
 
 ## Rules that are easy to break
-- Every user-facing string lives in `src/ui/copy.ts`. The store and domain
-  return data (a reason, a Problem), never a sentence.
+- Every user-facing string lives in a dictionary: `copy-en.ts` is the
+  reference and `copy-nl.ts` is typed as its shape, so a missing or invented
+  translation does not compile. Components import `copy` from `copy.ts`, which
+  serves the chosen language; they never learn that languages exist.
+- The store and domain return data (a reason, a Problem), never a sentence.
 - A migration that has shipped is never edited, only followed by a new one.
   Every migration gets a fixture test.
 - Adding an OPTIONAL field to a record needs no schema bump: bumping makes
@@ -42,6 +45,10 @@ domain ← persistence ← store ← ui
   the element itself, or it keeps the component's Dutch default.
 - `nldd-button-group` is vertical by default; rows want `orientation="horizontal"`.
 - `nldd-top-title-bar` renders an `h1`. One per page.
+- A component reads its `translations` when it is created and not again, so
+  an element carrying one has to be keyed on the language.
+- Dark mode is one property: `color-scheme` on the root. The palette is
+  built on light-dark(), so nothing else needs to know.
 - NLDD ships breaking changes as patch releases: read its CHANGELOG before
   upgrading, and let the import guard, the accent guard and Playwright catch
   the rest.

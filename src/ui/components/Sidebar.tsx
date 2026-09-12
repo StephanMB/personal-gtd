@@ -1,9 +1,10 @@
 import { STATUSES, type Status } from '../../domain/model.ts';
 import { appState, lists, projectViews } from '../app-state.ts';
-import { copy } from '../copy.ts';
+import { copy, language } from '../copy.ts';
 import { LIST_KEYS, PROJECTS_KEY, REVIEW_KEY } from '../keys.ts';
 import { navigate } from '../router.ts';
 import { BackupPanel } from './BackupPanel.tsx';
+import { AppearancePanel } from './AppearancePanel.tsx';
 import { RecoveredPanel } from './RecoveredPanel.tsx';
 
 const ICONS: Record<Status, string> = {
@@ -34,7 +35,15 @@ export function Sidebar({ current }: { current: Status | 'projects' | 'review' |
             navigation list takes aria-label on the element itself, or it keeps
             the component's Dutch default. */}
         <nldd-skip-link text={copy.skipToList}>
-          <nldd-list type="navigation" aria-label={copy.navLabel}>
+          {/* Keyed on the language: the design system reads `translations` when
+              the element is created and not again, so switching language has to
+              give it a new element or its screen-reader hint stays behind. */}
+          <nldd-list
+            key={language.value}
+            type="navigation"
+            aria-label={copy.navLabel}
+            translations={{ 'components.list.arrow-navigation-description-text': copy.appearance.listArrowHint }}
+          >
             {STATUSES.map((status) => {
               const count = byStatus[status].length;
               return (
@@ -116,6 +125,7 @@ export function Sidebar({ current }: { current: Status | 'projects' | 'review' |
         <nldd-spacer size="24" />
         <BackupPanel />
         <RecoveredPanel />
+        <AppearancePanel />
       </nldd-simple-section>
     </nldd-page>
   );
