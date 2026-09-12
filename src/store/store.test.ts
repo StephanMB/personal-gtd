@@ -202,7 +202,7 @@ test('a bug inside a command is reported and answered, not left as a rejection',
         if (broken) throw new Error('boom');
         return { kind: 'empty' };
       },
-      save: () => ({ ok: true }),
+      save: () => ({ ok: true, raw: '' }),
       stash: () => null,
       subscribe: () => () => {},
     },
@@ -244,4 +244,13 @@ test('data that turns unreadable after boot is copied aside exactly once', async
 
   await store.dispatch({ type: 'capture', input: 'more' });
   assert.equal(copies().length, 1, 'the same damaged data is never copied twice');
+});
+
+test('a command notifies subscribers once: an unchanged read is not an update', async () => {
+  const store = openTab(new MemoryStore());
+  await store.dispatch({ type: 'capture', input: 'one' });
+  let calls = 0;
+  store.subscribe(() => calls++);
+  await store.dispatch({ type: 'capture', input: 'two' });
+  assert.equal(calls, 1, 're-reading our own write must not re-render the lists');
 });

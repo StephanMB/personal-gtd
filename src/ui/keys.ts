@@ -21,9 +21,18 @@ export interface KeyPress {
   shiftKey: boolean;
 }
 
-export const LIST_KEYS: Record<Status, string> = Object.fromEntries(
-  STATUSES.map((status, i) => [status, String(i + 1)]),
-) as Record<Status, string>;
+/**
+ * Written out rather than derived from STATUSES by index: adding a view would
+ * otherwise shift every digit and break the muscle memory you built. A new
+ * view has to be given a key here deliberately, or none at all.
+ */
+export const LIST_KEYS: Record<Status, string> = {
+  inbox: '1',
+  next: '2',
+  waiting: '3',
+  someday: '4',
+  done: '5',
+};
 
 export function matchShortcut(e: KeyPress, typing: boolean): ShortcutAction | null {
   if (typing || e.altKey) return null;

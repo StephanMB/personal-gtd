@@ -115,6 +115,8 @@ export function createStore({
   let nextEntryId = 1;
   /** Unreadable data already copied aside, so the same data is never copied twice. */
   let stashed: string | null = null;
+  /** What storage held when this tab last looked, so an unchanged read is skipped. */
+  let lastRaw: string | null = null;
 
   function set(patch: Partial<StoreState>): void {
     state = { ...state, ...patch };
@@ -194,8 +196,15 @@ export function createStore({
         else if (state.problem === null) set({ problem: { kind: 'paused', cause: 'unreadable-items', raw: fresh.raw } });
         return;
       }
-      if (fresh.from === SCHEMA_VERSION) set({ items: fresh.items });
+      if (fresh.from === SCHEMA_VERSION) {
+        // Storage holds exactly what we last saw. Re-parsing it would hand
+        // every component new objects and re-render the lists for nothing.
+        if (fresh.raw === lastRaw) return;
+        lastRaw = fresh.raw;
+        set({ items: fresh.items });
+      }
     } else if (fresh.kind === 'empty' && state.items.length > 0) {
+      lastRaw = null;
       set({ items: [] });
     }
   }
@@ -208,6 +217,7 @@ export function createStore({
     }
     const result = repo.save([...items]);
     if (result.ok) {
+      lastRaw = result.raw;
       const problem = state.problem?.kind === 'save-failed' ? null : state.problem;
       set({ ...patch, items, unsaved: false, problem });
     } else {
@@ -289,6 +299,7 @@ export function createStore({
             if (result.invalid > 0) problem = { kind: 'unreadable-items', count: result.invalid, copyKey: key };
           }
           const purged = purgeTombstones(result.items, now());
+          lastRaw = result.raw;
           set({ items: purged, problem });
           if (purged.length !== result.items.length || result.from < SCHEMA_VERSION || result.invalid > 0) save(purged);
           break;

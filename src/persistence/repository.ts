@@ -20,7 +20,8 @@ export type LoadResult =
   | { kind: 'newer'; version: number }
   | { kind: 'unavailable'; error: unknown };
 
-export type WriteResult = { ok: true } | { ok: false; error: unknown };
+/** `raw` is what was written: the caller can compare it with a later read. */
+export type WriteResult = { ok: true; raw: string } | { ok: false; error: unknown };
 
 /**
  * The seam between the app and where data lives. Today: localStorage.
@@ -84,9 +85,10 @@ export function createLocalStorageRepository(
 
     save(items) {
       const doc: StoredDoc = { schemaVersion: SCHEMA_VERSION, items };
+      const raw = JSON.stringify(doc);
       try {
-        getStore().setItem(DATA_KEY, JSON.stringify(doc));
-        return { ok: true };
+        getStore().setItem(DATA_KEY, raw);
+        return { ok: true, raw };
       } catch (error) {
         return { ok: false, error };
       }

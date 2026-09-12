@@ -36,7 +36,7 @@ test('legacy data is migrated in memory and saving never touches the legacy key'
   assert.equal(loaded.from, 1);
   assert.equal(loaded.items[0].completedAt, 2);
 
-  assert.deepEqual(repo.save(loaded.items), { ok: true });
+  assert.equal(repo.save(loaded.items).ok, true);
   assert.equal(store.getItem(LEGACY_KEY), v1, 'legacy copy untouched (rollback safety)');
   assert.equal(JSON.parse(store.getItem(DATA_KEY)!).schemaVersion, SCHEMA_VERSION);
 
