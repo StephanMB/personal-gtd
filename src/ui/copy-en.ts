@@ -221,6 +221,7 @@ export const en = {
   problemActions: { download: 'Download data', resume: 'Resume saving', export: 'Export' },
 
   demo: {
+    title: 'Demo',
     try: 'Try a demo',
     running: 'Demo data',
     explain: 'A sample system to click around in. Your own lists are untouched.',
@@ -245,8 +246,15 @@ export const en = {
     },
   },
 
+  settings: {
+    title: 'Settings',
+    backup: 'Backup',
+  },
+
   appearance: {
-    theme: 'Appearance',
+    title: 'Appearance',
+    explain: 'Both are stored with your data, so they survive a reload and travel with a backup.',
+    theme: 'Theme',
     system: 'System',
     light: 'Light',
     dark: 'Dark',

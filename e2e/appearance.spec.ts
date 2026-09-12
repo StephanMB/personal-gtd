@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openList, openSettings } from './helpers.ts';
 
 /**
  * Both choices live in the document rather than in this browser, so they
@@ -7,6 +8,7 @@ import { expect, test } from '@playwright/test';
 test('appearance and language are chosen once and remembered', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('navigation')).toContainText('Next actions');
+  await openSettings(page);
 
   await page.getByRole('radio', { name: 'Dark' }).click();
   await expect
@@ -19,6 +21,8 @@ test('appearance and language are chosen once and remembered', async ({ page }) 
 
   await page.reload();
   await expect(page.getByRole('navigation')).toContainText('Eerstvolgende acties');
+  // The choice is remembered, so the page it was made on is beside the point.
+  await openList(page, 'Instellingen').click();
   expect(await page.evaluate(() => document.documentElement.style.colorScheme)).toBe('dark');
   expect(await page.evaluate(() => document.documentElement.lang)).toBe('nl');
 

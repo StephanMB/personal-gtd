@@ -33,6 +33,7 @@ test('p starts clarifying, and decision keys only work inside the flow', () => {
   assert.deepEqual(matchShortcut(key('p'), false, 'clarify'), { type: 'decide', decision: 'project' });
   assert.deepEqual(matchShortcut(key('6'), false), { type: 'go-projects' });
   assert.deepEqual(matchShortcut(key('7'), false), { type: 'go-review' });
+  assert.deepEqual(matchShortcut(key('0'), false), { type: 'go-settings' });
   assert.deepEqual(matchShortcut(key('Escape'), false, 'clarify'), { type: 'leave' });
   assert.deepEqual(matchShortcut(key('2'), false, 'clarify'), { type: 'go', status: 'next' }, 'a way out stays');
 });

@@ -1,11 +1,9 @@
 import { STATUSES, type Status } from '../../domain/model.ts';
-import { appState, lists, projectViews } from '../app-state.ts';
+import { live } from '../../domain/queries.ts';
+import { appState, isDemo, lists, projectViews } from '../app-state.ts';
 import { copy, language } from '../copy.ts';
-import { LIST_KEYS, PROJECTS_KEY, REVIEW_KEY } from '../keys.ts';
+import { LIST_KEYS, PROJECTS_KEY, REVIEW_KEY, SETTINGS_KEY } from '../keys.ts';
 import { navigate } from '../router.ts';
-import { BackupPanel } from './BackupPanel.tsx';
-import { AppearancePanel } from './AppearancePanel.tsx';
-import { DemoPanel } from './DemoPanel.tsx';
 import { RecoveredPanel } from './RecoveredPanel.tsx';
 
 const ICONS: Record<Status, string> = {
@@ -16,13 +14,38 @@ const ICONS: Record<Status, string> = {
   done: 'check-mark-circle',
 };
 
-export function Sidebar({ current }: { current: Status | 'projects' | 'review' | null }) {
+/**
+ * The lists, and nothing else.
+ *
+ * Export, appearance, language and the demo each arrived as one more control
+ * under the navigation, until the sidebar was half lists and half settings and
+ * neither read as the point of the app. They are a page now, reached by a row
+ * like any other, so this is a single quiet list again. What stays here is
+ * what has to be seen without going to look for it: the counts, the badges,
+ * and data that could not be read.
+ */
+export function Sidebar({ current }: { current: Status | 'projects' | 'review' | 'settings' | null }) {
   const byStatus = lists.value;
   const { active, stalled } = projectViews.value;
   const lastReviewed = appState.value.settings.lastReviewedAt;
   const daysSinceReview = lastReviewed === undefined ? null : Math.floor((Date.now() - lastReviewed) / 86_400_000);
   // A week is the point of a weekly review; never reviewed counts as overdue.
   const reviewOverdue = daysSinceReview === null || daysSinceReview >= 7;
+  // The backup nudge was a line of text under a button here. The button moved
+  // to the settings page; the nudge cannot, because a backup you never think
+  // about is the one you do not have. It speaks up only when it has something
+  // to say, and says nothing the rest of the time.
+  const lastExport = appState.value.settings.lastExportAt;
+  const daysSinceExport = lastExport === undefined ? null : Math.floor((Date.now() - lastExport) / 86_400_000);
+  const worthLosing = live(appState.value.items).length >= 5;
+  const exportNote =
+    daysSinceExport === null
+      ? worthLosing
+        ? copy.backup.never
+        : undefined
+      : daysSinceExport >= 14
+        ? copy.backup.last(daysSinceExport)
+        : undefined;
   return (
     <nldd-page sticky-header>
       {/* A visual title, not a heading: nldd-top-title-bar renders an h1 and
@@ -121,13 +144,33 @@ export function Sidebar({ current }: { current: Status | 'projects' | 'review' |
                 <nldd-keyboard-shortcut size="sm" variant="simple" keys={REVIEW_KEY} />
               </nldd-cell>
             </nldd-list-item>
+
+            {/* Everything about the app rather than about your lists. The
+                badge is the one thing that cannot wait behind a click: lists
+                that are not yours should never look like lists that are. */}
+            <nldd-list-item
+              button
+              selected={current === 'settings' || undefined}
+              onClick={() => navigate({ view: 'settings' })}
+            >
+              <nldd-icon-cell size="20" icon="gear" />
+              <nldd-spacer-cell size="8" />
+              <nldd-text-cell text={copy.settings.title} supporting-text={exportNote} />
+              {isDemo && (
+                <nldd-cell>
+                  <nldd-badge size="sm" color="warning" text={copy.demo.running} />
+                </nldd-cell>
+              )}
+              <nldd-spacer-cell size="8" />
+              <nldd-cell>
+                <nldd-keyboard-shortcut size="sm" variant="simple" keys={SETTINGS_KEY} />
+              </nldd-cell>
+            </nldd-list-item>
           </nldd-list>
         </nldd-skip-link>
-        <nldd-spacer size="24" />
-        <BackupPanel />
+        {/* Not a setting: it appears only when data could not be read, and
+            then it is the most important thing on the screen. */}
         <RecoveredPanel />
-        <AppearancePanel />
-        <DemoPanel />
       </nldd-simple-section>
     </nldd-page>
   );

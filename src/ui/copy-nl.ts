@@ -234,6 +234,7 @@ export const nl: Dictionary = {
   problemActions: { download: 'Gegevens downloaden', resume: 'Opslaan hervatten', export: 'Exporteren' },
 
   demo: {
+    title: 'Demo',
     try: 'Bekijk een demo',
     running: 'Demogegevens',
     explain: 'Een voorbeeldsysteem om in rond te klikken. Je eigen lijsten blijven onaangeroerd.',
@@ -258,8 +259,15 @@ export const nl: Dictionary = {
     },
   },
 
+  settings: {
+    title: 'Instellingen',
+    backup: 'Back-up',
+  },
+
   appearance: {
-    theme: 'Weergave',
+    title: 'Weergave',
+    explain: 'Allebei worden bij je gegevens bewaard, dus ze overleven een herlaadbeurt en reizen mee in een back-up.',
+    theme: 'Thema',
     system: 'Systeem',
     light: 'Licht',
     dark: 'Donker',

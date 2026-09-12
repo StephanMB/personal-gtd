@@ -20,7 +20,7 @@ export function DemoPanel() {
     <div class="demo">
       <nldd-badge size="sm" color="warning" text={copy.demo.running} />
       <p class="demo-explain">{copy.demo.explain}</p>
-      <nldd-button-group size="sm">
+      <nldd-button-group size="sm" orientation="horizontal">
         <nldd-button size="sm" text={copy.demo.leave} onClick={leaveDemo} />
         <nldd-button size="sm" variant="neutral-transparent" text={copy.demo.reset} onClick={resetDemo} />
       </nldd-button-group>

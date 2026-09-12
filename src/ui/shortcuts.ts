@@ -44,6 +44,9 @@ export function installShortcuts(): void {
       case 'go-review':
         navigate({ view: 'review' });
         break;
+      case 'go-settings':
+        navigate({ view: 'settings' });
+        break;
       case 'undo':
         void undoLast();
         break;

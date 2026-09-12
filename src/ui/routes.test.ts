@@ -16,8 +16,9 @@ test('the clarify flow has a path of its own', () => {
   assert.deepEqual(parseRoute('/clarify'), route);
 });
 
-test('the review has a path of its own', () => {
+test('the review and settings each have a path of their own', () => {
   assert.deepEqual(parseRoute(pathFor({ view: 'review' })), { view: 'review' });
+  assert.deepEqual(parseRoute(pathFor({ view: 'settings' })), { view: 'settings' });
 });
 
 test('projects have a list, and each project a page', () => {

@@ -36,9 +36,18 @@ There is no tutorial, and nothing to read before you start.
   backup can't bring them back.
 - **Export regularly.** It is the only real backup: clearing site data wipes
   everything, and Safari deletes storage for sites unused for 7 days.
-  Export/import is in the sidebar; import merges and never removes.
+  Export/import is under Settings; import merges and never removes.
 - Unreadable data is never overwritten: it is set aside, the app says so, and
   the sidebar offers it back under "Recovered data".
+
+## The sidebar
+
+The sidebar is the lists and nothing else: five statuses, projects, the weekly
+review, and a row into settings. Everything that is about the app rather than
+about your lists lives behind that last row, because none of it is needed to
+get through a day. Two things are exempt and stay in the navigation, because
+they are worth knowing without going to look: a red badge when a project has
+stopped moving, and a "Demo data" badge when the lists on screen are not yours.
 
 ## What this will never do
 
@@ -55,7 +64,7 @@ annoyance in the app as an item; most of them die there, which is the point.
 
 ## Trying it out
 
-"Try a demo" in the sidebar opens a filled-in system: a few things captured, a
+"Try a demo" under Settings opens a filled-in system: a few things captured, a
 project that has stopped, something waiting too long, a review that is overdue.
 It lives in its own document under a separate key, so your own lists are not
 read, written or merged while it runs; leaving puts you straight back. Only the
@@ -64,7 +73,7 @@ different app.
 
 ## Appearance and language
 
-The sidebar carries two choices: appearance (system, light or dark) and
+Settings carries two choices: appearance (system, light or dark) and
 language (English or Nederlands). Both are stored with your data rather than
 in this browser, so they survive a reload, are the same in every tab, and come
 back with a backup. Appearance defaults to following the operating system.

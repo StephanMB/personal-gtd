@@ -31,6 +31,7 @@ export type ShortcutAction =
   | { type: 'go'; status: Status }
   | { type: 'go-projects' }
   | { type: 'go-review' }
+  | { type: 'go-settings' }
   | { type: 'undo' }
   | { type: 'decide'; decision: Decision }
   | { type: 'edit' }
@@ -60,6 +61,8 @@ export const LIST_KEYS: Record<Status, string> = {
 /** The two views that are not lists sit after the five that are. */
 export const PROJECTS_KEY = '6';
 export const REVIEW_KEY = '7';
+/** Last in the row, and last in the list. */
+export const SETTINGS_KEY = '0';
 
 /** One key per decision, live only inside the clarify flow. */
 export const DECISION_KEYS: Record<string, Decision> = {
@@ -89,6 +92,7 @@ export function matchShortcut(e: KeyPress, typing: boolean, scope: Scope = 'glob
   if (e.key === 'p') return { type: 'clarify' };
   if (e.key === PROJECTS_KEY) return { type: 'go-projects' };
   if (e.key === REVIEW_KEY) return { type: 'go-review' };
+  if (e.key === SETTINGS_KEY) return { type: 'go-settings' };
   const status = STATUSES.find((s) => LIST_KEYS[s] === e.key);
   return status ? { type: 'go', status } : null;
 }

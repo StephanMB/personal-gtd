@@ -106,21 +106,40 @@ body {
   margin-block: var(--primitives-space-8);
 }
 
+/* Settings is a page now, so the groups get air between them rather than the
+   stacked-up spacing they needed when they were crowded into the sidebar. */
+.settings > nldd-title {
+  display: block;
+  margin-block-start: var(--primitives-space-32);
+}
+
+.settings > nldd-title:first-child {
+  margin-block-start: 0;
+}
+
+.appearance-note {
+  max-width: 60ch;
+  margin: var(--primitives-space-4) 0 var(--primitives-space-12);
+  font-size: 0.875em;
+  color: var(--primitives-color-coolgray-600);
+}
+
 .appearance {
-  margin-block-start: var(--primitives-space-16);
+  margin-block-start: var(--primitives-space-32);
 }
 
 .appearance-label {
-  margin: var(--primitives-space-8) 0 var(--primitives-space-4);
+  margin: var(--primitives-space-16) 0 var(--primitives-space-4);
   font-size: 0.8125em;
   color: var(--primitives-color-coolgray-600);
 }
 
 .demo {
-  margin-block-start: var(--primitives-space-16);
+  margin-block-start: var(--primitives-space-12);
 }
 
 .demo-explain {
+  max-width: 60ch;
   margin: var(--primitives-space-4) 0 var(--primitives-space-8);
   font-size: 0.8125em;
   color: var(--primitives-color-coolgray-600);

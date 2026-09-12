@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { capture, row } from './helpers.ts';
+import { capture, openSettings, row } from './helpers.ts';
 
 /**
  * A demo you cannot tell apart from your own data would be worse than no demo,
@@ -10,12 +10,15 @@ test('the demo is a sandbox: a full system to look at, your own lists untouched'
   await page.goto('/');
   await capture(page, 'My own real item');
 
+  await openSettings(page);
   await page.getByRole('button', { name: 'Try a demo' }).click();
   await expect(page).toHaveURL(/\?demo$/);
-  await expect(page.getByText('Demo data').first()).toBeVisible();
+  // The badge is in the navigation, where it is visible from every page: a
+  // demo you have to go and check is one you can mistake for your own lists.
+  const nav = page.getByRole('navigation');
+  await expect(nav).toContainText('Demo data');
 
   // Full enough that the things which are otherwise hard to see are on screen.
-  const nav = page.getByRole('navigation');
   await expect(nav).toContainText('1 project with no next action');
   await expect(nav).toContainText('Reviewed 9 days ago');
 
@@ -24,9 +27,11 @@ test('the demo is a sandbox: a full system to look at, your own lists untouched'
   );
   expect(real).toEqual(['My own real item']);
 
+  await openSettings(page);
   await page.getByRole('button', { name: 'Leave the demo' }).click();
   await expect(page).toHaveURL(/\/inbox$/);
   // A capture lands in the inbox, which is where leaving the demo puts us.
   await expect(row(page, 'My own real item')).toBeVisible();
   await expect(nav).not.toContainText('1 project with no next action');
+  await expect(nav).not.toContainText('Demo data');
 });

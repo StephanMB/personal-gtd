@@ -5,8 +5,8 @@ import { setLanguage, setTheme } from '../commands.ts';
 import { copy, LANGUAGES, type Language } from '../copy.ts';
 
 /**
- * Appearance and language, in the sidebar next to the other things that are
- * about the app rather than about your lists.
+ * Appearance and language, on the settings page with the other things that
+ * are about the app rather than about your lists.
  *
  * Both are stored in the document, so they survive a reload, travel with a
  * backup and are the same in every tab. "System" is the default for appearance
@@ -39,7 +39,7 @@ function Choice<T extends string>({
   }, [onSelect]);
 
   return (
-    <nldd-segmented-control ref={control} size="sm" width="full" accessible-label={label} value={value}>
+    <nldd-segmented-control ref={control} size="sm" accessible-label={label} value={value}>
       {options.map((option) => (
         <nldd-segmented-control-item key={option.value} value={option.value} text={option.text} />
       ))}
@@ -62,6 +62,8 @@ export function AppearancePanel() {
 
   return (
     <div class="appearance">
+      <nldd-title size={5}>{copy.appearance.title}</nldd-title>
+      <p class="appearance-note">{copy.appearance.explain}</p>
       <p class="appearance-label">{copy.appearance.theme}</p>
       <Choice
         label={copy.appearance.theme}

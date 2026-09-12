@@ -7,6 +7,7 @@ import { ListPage } from './components/ListPage.tsx';
 import { ProjectPage } from './components/ProjectPage.tsx';
 import { ProjectsPage } from './components/ProjectsPage.tsx';
 import { ReviewPage } from './components/ReviewPage.tsx';
+import { SettingsPage } from './components/SettingsPage.tsx';
 import { Sidebar } from './components/Sidebar.tsx';
 
 /**
@@ -28,7 +29,9 @@ export function App() {
         ? 'projects'
         : view.view === 'review'
           ? 'review'
-          : null;
+          : view.view === 'settings'
+            ? 'settings'
+            : null;
 
   return (
     <nldd-app-view>
@@ -41,6 +44,8 @@ export function App() {
             <ClarifyPage />
           ) : view.view === 'review' ? (
             <ReviewPage />
+          ) : view.view === 'settings' ? (
+            <SettingsPage />
           ) : view.view === 'projects' ? (
             <ProjectsPage />
           ) : view.view === 'project' ? (

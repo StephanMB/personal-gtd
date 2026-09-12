@@ -13,7 +13,7 @@ export function BackupPanel() {
 
   return (
     <div class="backup">
-      <nldd-button-group size="sm">
+      <nldd-button-group size="sm" orientation="horizontal">
         <Hint id="export-backup">
           <nldd-button size="sm" start-icon="export" text={copy.backup.export} onClick={exportData} />
         </Hint>

@@ -20,6 +20,16 @@ export const heading = (page: Page, text: string) => page.getByRole('heading', {
 
 export const openList = (page: Page, name: string) => page.getByRole('navigation').getByRole('button', { name });
 
+/**
+ * Export, appearance, language and the demo are a page now, not a stack of
+ * controls under the sidebar navigation, so a test that wants one goes there
+ * the way a user does.
+ */
+export async function openSettings(page: Page): Promise<void> {
+  await openList(page, 'Settings').click();
+  await expect(heading(page, 'Settings')).toBeVisible();
+}
+
 /** Raw app data, straight from localStorage. */
 export const storedItems = (page: Page) =>
   page.evaluate(() => (JSON.parse(localStorage.getItem('gtd:data') ?? '{"items":[]}') as { items: { title: string; deletedAt?: number }[] }).items);
