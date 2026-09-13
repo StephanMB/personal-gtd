@@ -2,7 +2,7 @@ import { STATUSES, type Status } from '../../domain/model.ts';
 import { live } from '../../domain/queries.ts';
 import { appState, isDemo, lists, projectViews } from '../app-state.ts';
 import { copy, language } from '../copy.ts';
-import { LIST_KEYS, PROJECTS_KEY, REVIEW_KEY, SETTINGS_KEY } from '../keys.ts';
+import { LIST_KEYS, PROJECTS_KEY, REVIEW_KEY, SEARCH_KEY, SETTINGS_KEY } from '../keys.ts';
 import { navigate } from '../router.ts';
 import { RecoveredPanel } from './RecoveredPanel.tsx';
 
@@ -24,7 +24,7 @@ const ICONS: Record<Status, string> = {
  * what has to be seen without going to look for it: the counts, the badges,
  * and data that could not be read.
  */
-export function Sidebar({ current }: { current: Status | 'projects' | 'review' | 'settings' | null }) {
+export function Sidebar({ current }: { current: Status | 'projects' | 'review' | 'search' | 'settings' | null }) {
   const byStatus = lists.value;
   const { active, stalled } = projectViews.value;
   const lastReviewed = appState.value.settings.lastReviewedAt;
@@ -68,6 +68,23 @@ export function Sidebar({ current }: { current: Status | 'projects' | 'review' |
             aria-label={copy.navLabel}
             translations={{ 'components.list.arrow-navigation-description-text': copy.appearance.listArrowHint }}
           >
+            {/* First, because it is not one more list but the way into all of
+                them. The shortcut is on the row so the keyboard is learned by
+                using the mouse once. */}
+            <nldd-list-item
+              button
+              selected={current === 'search' || undefined}
+              onClick={() => navigate({ view: 'search', query: '' })}
+            >
+              <nldd-icon-cell size="20" icon="magnifier" />
+              <nldd-spacer-cell size="8" />
+              <nldd-text-cell text={copy.search.title} />
+              <nldd-spacer-cell size="8" />
+              <nldd-cell>
+                <nldd-keyboard-shortcut size="sm" variant="simple" keys={SEARCH_KEY} />
+              </nldd-cell>
+            </nldd-list-item>
+
             {STATUSES.map((status) => {
               const count = byStatus[status].length;
               return (

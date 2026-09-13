@@ -106,6 +106,13 @@ body {
   margin-block: var(--primitives-space-8);
 }
 
+/* The contexts of a busy list can outgrow the pane. The row scrolls; the page
+   never does. */
+.context-filter {
+  margin-block-end: var(--primitives-space-16);
+  overflow-x: auto;
+}
+
 /* Settings is a page now, so the groups get air between them rather than the
    stacked-up spacing they needed when they were crowded into the sidebar. */
 .settings > nldd-title {

@@ -6,6 +6,7 @@ import { STATUSES, type Status } from '../domain/model.ts';
  *
  * Anywhere:
  *   c           focus the capture field
+ *   /           search everything
  *   p           clarify the inbox (process it)
  *   1 … 5       go to Inbox, Next, Waiting, Someday, Done
  *   Ctrl/⌘ + Z  undo the last change
@@ -28,6 +29,7 @@ export type Decision = 'next' | 'waiting' | 'someday' | 'done' | 'trash' | 'proj
 export type ShortcutAction =
   | { type: 'focus-capture' }
   | { type: 'clarify' }
+  | { type: 'search' }
   | { type: 'go'; status: Status }
   | { type: 'go-projects' }
   | { type: 'go-review' }
@@ -63,6 +65,8 @@ export const PROJECTS_KEY = '6';
 export const REVIEW_KEY = '7';
 /** Last in the row, and last in the list. */
 export const SETTINGS_KEY = '0';
+/** Not a digit, because search is not one more list. */
+export const SEARCH_KEY = '/';
 
 /** One key per decision, live only inside the clarify flow. */
 export const DECISION_KEYS: Record<string, Decision> = {
@@ -79,7 +83,11 @@ export function matchShortcut(e: KeyPress, typing: boolean, scope: Scope = 'glob
   if (typing || e.altKey) return null;
   const mod = e.ctrlKey || e.metaKey;
   if (mod && !e.shiftKey && e.key.toLowerCase() === 'z') return { type: 'undo' };
-  if (mod || e.shiftKey) return null;
+  if (mod) return null;
+  // Matched on the character rather than the physical key: "/" is shifted on
+  // plenty of layouts, and the shortcut should be the one you can type.
+  if (e.key === SEARCH_KEY) return { type: 'search' };
+  if (e.shiftKey) return null;
 
   if (scope === 'clarify') {
     if (e.key === 'Escape') return { type: 'leave' };

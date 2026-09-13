@@ -145,7 +145,7 @@ export const en = {
     'capture-context': {
       text: 'Tag where it happens',
       supporting:
-        'A trailing @word becomes a context: "Buy milk @errands". Email addresses are left alone, so jan@minbzk.nl stays intact.',
+        'A trailing @word becomes a context: "Buy milk @errands". Once a list holds two of them it can be filtered down to one, which is the point: what you can actually do where you are. Email addresses are left alone.',
     },
     'clarify-inbox': {
       text: 'Decide once per item',
@@ -244,6 +244,28 @@ export const en = {
       contextEmail: 'email',
       contextCalls: 'calls',
     },
+  },
+
+  filter: {
+    label: 'Filter by context',
+    all: 'All',
+    /** A filtered list that is empty should say which filter, not just "nothing". */
+    empty: (label: string) => `Nothing tagged @${label} on this list.`,
+  },
+
+  search: {
+    title: 'Search',
+    label: 'Search your lists',
+    placeholder: 'A word, or @context',
+    clear: 'Clear search',
+    submit: 'Search',
+    prompt: 'Type a word from the title. An @tag narrows it to one context.',
+    nothing: (query: string) => `Nothing matches “${query}”.`,
+    actions: 'Actions',
+    projects: 'Projects',
+    /** Where a hit lives, so following it is not a leap in the dark. */
+    where: (list: string, context?: string) => (context === undefined ? list : `${list} · @${context}`),
+    projectWhere: (open: number) => (open === 1 ? '1 open action' : `${open} open actions`),
   },
 
   settings: {

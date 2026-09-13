@@ -14,6 +14,12 @@ test('single keys map to actions', () => {
   assert.equal(matchShortcut(key('C', { shiftKey: true }), false), null);
 });
 
+test('slash searches even where the layout needs Shift to type it', () => {
+  assert.deepEqual(matchShortcut(key('/', { shiftKey: true }), false), { type: 'search' });
+  assert.equal(matchShortcut(key('/', { ctrlKey: true }), false), null, 'Ctrl+/ belongs to the browser');
+  assert.equal(matchShortcut(key('/'), true), null, 'and never while typing');
+});
+
 test('undo works with Ctrl and with Cmd, but not with Shift (that is redo)', () => {
   assert.deepEqual(matchShortcut(key('z', { ctrlKey: true }), false), { type: 'undo' });
   assert.deepEqual(matchShortcut(key('z', { metaKey: true }), false), { type: 'undo' });
@@ -34,6 +40,7 @@ test('p starts clarifying, and decision keys only work inside the flow', () => {
   assert.deepEqual(matchShortcut(key('6'), false), { type: 'go-projects' });
   assert.deepEqual(matchShortcut(key('7'), false), { type: 'go-review' });
   assert.deepEqual(matchShortcut(key('0'), false), { type: 'go-settings' });
+  assert.deepEqual(matchShortcut(key('/'), false), { type: 'search' });
   assert.deepEqual(matchShortcut(key('Escape'), false, 'clarify'), { type: 'leave' });
   assert.deepEqual(matchShortcut(key('2'), false, 'clarify'), { type: 'go', status: 'next' }, 'a way out stays');
 });

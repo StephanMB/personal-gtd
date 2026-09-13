@@ -135,7 +135,7 @@ export const nl: Dictionary = {
     'capture-context': {
       text: 'Tag waar het gebeurt',
       supporting:
-        'Een @woord aan het eind wordt een context: "Melk kopen @boodschappen". E-mailadressen blijven heel, dus jan@minbzk.nl blijft intact.',
+        'Een @woord aan het eind wordt een context: "Melk halen @boodschappen". Zodra een lijst er twee bevat kun je hem tot één terugbrengen, en daar gaat het om: wat je hier en nu echt kunt doen. E-mailadressen blijven heel.',
     },
     'clarify-inbox': {
       text: 'Beslis één keer per item',
@@ -257,6 +257,26 @@ export const nl: Dictionary = {
       contextEmail: 'e-mail',
       contextCalls: 'bellen',
     },
+  },
+
+  filter: {
+    label: 'Filter op context',
+    all: 'Alles',
+    empty: (label: string) => `Niets met @${label} op deze lijst.`,
+  },
+
+  search: {
+    title: 'Zoeken',
+    label: 'Zoek in je lijsten',
+    placeholder: 'Een woord, of @context',
+    clear: 'Zoekopdracht wissen',
+    submit: 'Zoeken',
+    prompt: 'Typ een woord uit de titel. Een @tag beperkt het tot één context.',
+    nothing: (query: string) => `Niets komt overeen met “${query}”.`,
+    actions: 'Acties',
+    projects: 'Projecten',
+    where: (list: string, context?: string) => (context === undefined ? list : `${list} · @${context}`),
+    projectWhere: (open: number) => (open === 1 ? '1 open actie' : `${open} open acties`),
   },
 
   settings: {

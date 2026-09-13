@@ -64,6 +64,21 @@ domain ← persistence ← store ← ui
 - One hint at a time, by priority. A hint retires when its control is used or
   it is waved away, and the fact is stored in settings, so it never returns.
 
+## Contexts and search
+- A context is free text on the item, compared through `fold()` in
+  `domain/contexts.ts`. That is the whole of "contexts are real things":
+  identity is how you COMPARE them, not how you store them, so there is no
+  record, no id and no migration. Renaming and merging are what would need
+  records; they are on the menu, and the README says so.
+- Filters live in the URL, never in a signal. A filtered list has to be
+  bookmarkable, survive a reload and be the same in a second tab — and it is
+  what would make a saved view a name plus a URL rather than a second
+  filtering mechanism.
+- `navigate()` carries the demo flag forward, because it is a query parameter
+  too. A sandbox that quietly drops out of sandbox mode is worse than none.
+- Search has no index: scanning is well under a frame, and an index is a
+  second copy of the truth that can be wrong. Measure before adding one.
+
 ## Scope discipline
 - The step 4 document is a menu, not a queue. Query features (a view over data
   that already exists) are cheap; entity features (a new record, a migration

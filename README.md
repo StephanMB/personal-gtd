@@ -10,12 +10,28 @@ All data stays in your browser; there is no backend and no account.
 
 A context is a trailing `@word`. Email addresses are left alone.
 
+Contexts are compared folded, so `@Home`, `@home` and `@home.` are one context;
+the tag shows the spelling you used most recently. Once a list holds two of
+them, a filter appears above it, and the choice goes into the URL
+(`/next?context=home`) so a filtered list can be bookmarked and survives a
+reload.
+
+## Search
+
+`/` opens search. Typing narrows across every list and your projects as you go;
+a word from the start of a title ranks above one buried in the middle, and what
+you have already finished ranks last. An `@tag` narrows to one context, on its
+own or alongside a word (`roof @home`). Enter takes the best match and lands you
+on the list it is actually on.
+
 ## Keyboard
 
 | Keys | Action |
 |---|---|
 | `c` | Focus the capture field |
+| `/` | Search |
 | `1`–`5` | Inbox, Next actions, Waiting for, Someday, Done |
+| `6` `7` `0` | Projects, Weekly review, Settings |
 | Ctrl/⌘+Z | Undo |
 | ↑ ↓ Tab | Move between rows / through a row's buttons |
 
@@ -42,8 +58,8 @@ There is no tutorial, and nothing to read before you start.
 
 ## The sidebar
 
-The sidebar is the lists and nothing else: five statuses, projects, the weekly
-review, and a row into settings. Everything that is about the app rather than
+The sidebar is the lists and nothing else: search, five statuses, projects, the
+weekly review, and a row into settings. Everything that is about the app rather than
 about your lists lives behind that last row, because none of it is needed to
 get through a day. Two things are exempt and stay in the navigation, because
 they are worth knowing without going to look: a red badge when a project has
@@ -58,6 +74,10 @@ A written no is easier to hold to than an unwritten one. This app will not grow:
 - sharing, collaboration, or anything multi-user
 - priorities, flags or colour-coded urgency
 - notifications that nag
+- renaming or merging contexts, or more than one per action: a context is
+  free text folded for comparison, not a record. Making it a record means a
+  migration that rewrites every item, and so far nothing has needed it.
+- saved views. A filter is already a URL; a bookmark is already a saved view.
 
 New features earn their place by being missed three separate times. Capture the
 annoyance in the app as an item; most of them die there, which is the point.

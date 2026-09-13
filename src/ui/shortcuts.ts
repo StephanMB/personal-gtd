@@ -35,6 +35,9 @@ export function installShortcuts(): void {
       case 'clarify':
         navigate({ view: 'clarify' });
         break;
+      case 'search':
+        navigate({ view: 'search', query: '' });
+        break;
       case 'go':
         navigate({ view: 'list', status: action.status });
         break;

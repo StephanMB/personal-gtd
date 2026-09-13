@@ -7,6 +7,7 @@ import { ListPage } from './components/ListPage.tsx';
 import { ProjectPage } from './components/ProjectPage.tsx';
 import { ProjectsPage } from './components/ProjectsPage.tsx';
 import { ReviewPage } from './components/ReviewPage.tsx';
+import { SearchPage } from './components/SearchPage.tsx';
 import { SettingsPage } from './components/SettingsPage.tsx';
 import { Sidebar } from './components/Sidebar.tsx';
 
@@ -27,11 +28,13 @@ export function App() {
       ? view.status
       : view.view === 'projects' || view.view === 'project'
         ? 'projects'
-        : view.view === 'review'
-          ? 'review'
-          : view.view === 'settings'
-            ? 'settings'
-            : null;
+        : view.view === 'search'
+          ? 'search'
+          : view.view === 'review'
+            ? 'review'
+            : view.view === 'settings'
+              ? 'settings'
+              : null;
 
   return (
     <nldd-app-view>
@@ -44,6 +47,8 @@ export function App() {
             <ClarifyPage />
           ) : view.view === 'review' ? (
             <ReviewPage />
+          ) : view.view === 'search' ? (
+            <SearchPage query={view.query} />
           ) : view.view === 'settings' ? (
             <SettingsPage />
           ) : view.view === 'projects' ? (
@@ -51,7 +56,7 @@ export function App() {
           ) : view.view === 'project' ? (
             <ProjectPage id={view.id} />
           ) : (
-            <ListPage status={view.status} />
+            <ListPage status={view.status} context={view.context} />
           )}
         </nldd-split-view-pane>
       </nldd-navigation-split-view>
